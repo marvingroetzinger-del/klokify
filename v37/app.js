@@ -1394,7 +1394,7 @@ function hWeek(){
     sub="Wochensaldo";
   }
   return `<section class="h-week">
-    <button type="button" class="h-week-head" data-goto-view="week"><span class="h-kicker">Woche ${isoWeekNumber(sel)}</span><span><b class="${bal>=0?"pos":"neg"}">${hSigned(bal)} h</b><small>${sub}</small></span></button>
+    <button type="button" class="h-week-head" data-sheet="konto" aria-label="Zeitkonto öffnen"><span><span class="h-kicker">Woche ${isoWeekNumber(sel)}</span><b class="${bal>=0?"pos":"neg"}">${hSigned(bal)}</b></span><span class="h-konto"><small>Konto</small><b class="${kontoBalance()>=0?"pos":"neg"}">${hSigned(kontoBalance())} h</b><i>›</i></span></button>
     <div class="h-days">${cells.join("")}</div>
   </section>`;
 }
@@ -1462,12 +1462,12 @@ function hVacation(){
   if(effectiveStatus(todayK)==="vacation"){
     const {to}=vacationBlockFrom(todayK);
     const left=daysUntil(to);
-    return `<button type="button" class="h-vac on" data-goto-view="year"><span class="h-vac-n">${left}<small> ${unit(left)}</small></span><span class="h-vac-t"><b>${left?"Urlaub läuft noch":"Letzter Urlaubstag"}</b><span>Resturlaub ${rest} / ${ent}</span></span><span class="h-vac-r">bis ${weekdayName(dateFromKey(to))}<b>${pad(dateFromKey(to).getDate())}.${pad(dateFromKey(to).getMonth()+1)}.</b></span></button>`;
+    return `<button type="button" class="h-vac on" data-sheet="vacation"><span class="h-vac-n">${left}<small> ${unit(left)}</small></span><span class="h-vac-t"><b>${left?"Urlaub läuft noch":"Letzter Urlaubstag"}</b><span>Resturlaub ${rest} / ${ent}</span></span><span class="h-vac-r">bis ${weekdayName(dateFromKey(to))}<b>${pad(dateFromKey(to).getDate())}.${pad(dateFromKey(to).getMonth()+1)}.</b></span></button>`;
   }
 
   const v=nextVacation();
   if(v){
-    return `<button type="button" class="h-vac" data-goto-view="year"><span class="h-vac-n">${v.days}<small> ${unit(v.days)}</small></span><span class="h-vac-t"><b>bis zum Urlaub</b><span>noch ${v.workLeft} Arbeits${v.workLeft===1?"tag":"tage"}</span></span><span class="h-vac-r">ab ${weekdayName(dateFromKey(v.from))}<b>${pad(dateFromKey(v.from).getDate())}.${pad(dateFromKey(v.from).getMonth()+1)}.</b></span></button>`;
+    return `<button type="button" class="h-vac" data-sheet="vacation"><span class="h-vac-n">${v.days}<small> ${unit(v.days)}</small></span><span class="h-vac-t"><b>bis zum Urlaub</b><span>noch ${v.workLeft} Arbeits${v.workLeft===1?"tag":"tage"}</span></span><span class="h-vac-r">ab ${weekdayName(dateFromKey(v.from))}<b>${pad(dateFromKey(v.from).getDate())}.${pad(dateFromKey(v.from).getMonth()+1)}.</b></span></button>`;
   }
 
   // Kein Urlaub geplant: nächster Feiertag als Ersatz
@@ -1588,6 +1588,126 @@ function openBulkVacation(fromKey,toKey){
   updateBulkPreview();
   $("bulkDialog").showModal();
 }
+
+/* ── V37 Zeitkonto ──
+   Übertrag (Stand laut Abrechnung) + alle Tagessalden ab dem Übertragsdatum.
+   Der laufende Tag zählt wie überall erst ab Erreichen des Solls. */
+function parseSignedDuration(raw){
+  let t=String(raw||"").trim().replace("−","-");
+  if(!t) return 0;
+  const neg=t.startsWith("-");
+  t=t.replace(/^[-+]/,"");
+  let min;
+  if(t.includes(":")){const [h,m]=t.split(":");min=Number(h||0)*60+Number(m||0);}
+  else min=Math.round(Number(t.replace(",","."))*60);
+  if(!Number.isFinite(min)) return null;
+  return neg?-min:min;
+}
+function kontoFromKey(){
+  if(state.settings.kontoStartDate) return state.settings.kontoStartDate;
+  const keys=Object.keys(state.records).sort();
+  return keys[0]||localDateKey(new Date());
+}
+function kontoBalance(){
+  const start=Number(state.settings.kontoStartMin)||0;
+  const from=dateFromKey(kontoFromKey());
+  const today=new Date();
+  return start+(from<=today?dateRangeBalance(from,today,true):0);
+}
+function signedH(min){return `${hSigned(min)} h`;}
+
+/* ── V37 Ebenen über dem Homescreen (Blatt von unten) ── */
+function openSheet(html){
+  const layer=$("sheetLayer");
+  layer.innerHTML=`<div class="h-scrim" data-sheet-close><div class="h-sheet" role="dialog" aria-modal="true"><div class="h-grab"></div>${html}</div></div>`;
+  layer.hidden=false;
+}
+function closeSheet(){const l=$("sheetLayer");l.hidden=true;l.innerHTML="";}
+function sheetRows(rows){
+  return `<div class="h-rows">${rows.filter(Boolean).map(r=>`<div class="h-row${r.cls?" "+r.cls:""}"><span>${r.l}</span><b class="${r.vc||""}">${r.v}</b></div>`).join("")}</div>`;
+}
+function sheetDay(){
+  const key=selectedDate,rec=normalizeRecord(state.records[key]||{}),c=recordCalc(key,true);
+  if(!rec.start){openEdit(key);return;}
+  const legal=legalPauseFor(c.target);
+  const pauseNote=c.hasActualPause?`${Math.round(c.breakMin)} genommen`:"noch keine";
+  openSheet(`<h3>Tagesrechnung</h3>
+    ${sheetRows([
+      {l:"Beginn",v:rec.start},
+      {l:"+ Soll",v:`${hDur(c.target)} h`},
+      {l:`+ Pause <small>(${pauseNote}${legal?`, Pflicht ${legal}`:""})</small>`,v:`${Math.round(c.projectedPauseMin||0)} Min`},
+      {l:rec.end?"Ende":"= Feierabend",v:rec.end||timeFromMinutes(c.plannedEnd),cls:"total"},
+      {l:"Gearbeitet",v:`${hDur(c.worked)} h`},
+      {l:rec.end?"Saldo heute":"Stand jetzt",v:signedH(c.balance),vc:c.balance>=0?"pos":"neg"},
+      rec.end?null:{l:"10-h-Grenze: spätestens",v:timeFromMinutes(c.latestEnd)}
+    ])}
+    <button type="button" class="h-btn ghost" data-sheet-edit="${key}">${H_ICON.edit}Tag bearbeiten</button>`);
+}
+function sheetPause(){
+  const key=selectedDate,rec=normalizeRecord(state.records[key]||{}),c=recordCalc(key,true);
+  const list=pauseTimeDetails(rec,key);
+  const isToday=key===localDateKey(new Date());
+  openSheet(`<h3>Pausen</h3>
+    ${list.length?sheetRows(list.map(p=>({l:p.type==="fixed"?"ohne Uhrzeit":p.label.replace("–läuft"," – läuft"),v:`${Math.round(p.duration)} Min`}))):`<p>Noch keine Pause erfasst.</p>`}
+    ${sheetRows([{l:"Summe",v:`${Math.round(c.breakMin||0)} Min`,cls:"total"},{l:"Gerechnet für Feierabend",v:`${Math.round(c.projectedPauseMin||0)} Min`}])}
+    <div class="h-sheet-actions">
+      ${isToday&&!rec.end?`<button type="button" class="h-btn primary" data-sheet-pause>${H_ICON.pause}Pause / Schnellpause</button>`:""}
+      <button type="button" class="h-btn ghost" data-sheet-edit="${key}">${H_ICON.edit}Pausen bearbeiten</button>
+    </div>`);
+}
+function sheetKonto(){
+  const now=new Date(),todayK=localDateKey(now);
+  const week=currentWeekBalance(),month=currentMonthBalance(),year=currentYearBalance();
+  const startMin=Number(state.settings.kontoStartMin)||0;
+  const from=kontoFromKey();
+  const todayPart=state.records[todayK]&&effectiveStatus(todayK)==="work"?dayBalanceForSummary(todayK,true):0;
+  const total=kontoBalance();
+  openSheet(`<h3>Zeitkonto</h3>
+    ${sheetRows([
+      {l:"Heute",v:todayPart?signedH(todayPart):"zählt ab Soll",vc:todayPart>=0?"pos":"neg"},
+      {l:`Woche ${isoWeekNumber(now)}`,v:signedH(week),vc:week>=0?"pos":"neg"},
+      {l:monthName(now.getMonth()),v:signedH(month),vc:month>=0?"pos":"neg"},
+      {l:`Jahr ${now.getFullYear()}`,v:signedH(year),vc:year>=0?"pos":"neg"},
+      {l:`Übertrag <small>ab ${dateShortDE(from)}</small>`,v:signedH(startMin)},
+      {l:"Konto gesamt",v:signedH(total),vc:total>=0?"pos":"neg",cls:"total"}
+    ])}
+    ${startMin||state.settings.kontoStartDate?"":`<p>Tipp: Trag in den Einstellungen den Stand laut Lohnabrechnung als Übertrag ein, dann stimmt das Konto.</p>`}
+    <div class="h-sheet-actions two">
+      <button type="button" class="h-btn ghost" data-sheet-go="week">Woche ›</button>
+      <button type="button" class="h-btn ghost" data-sheet-go="month">Monat ›</button>
+    </div>
+    ${startMin||state.settings.kontoStartDate?"":`<button type="button" class="h-btn ghost" data-sheet-settings>Übertrag eintragen</button>`}`);
+}
+function sheetVacation(){
+  const now=new Date(),year=now.getFullYear(),todayK=localDateKey(now);
+  const ent=Number(state.settings.vacationEntitlement)||0;
+  let taken=0,planned=0;
+  const d=new Date(year,0,1);
+  while(d.getFullYear()===year){
+    const k=localDateKey(d);
+    if(effectiveStatus(k)==="vacation"&&![0,6].includes(d.getDay())){ if(k<=todayK) taken++; else planned++; }
+    d.setDate(d.getDate()+1);
+  }
+  const v=nextVacation();
+  const fmt=k=>bridgeShort(k);
+  openSheet(`<h3>Urlaub ${year}</h3>
+    ${v?sheetRows([
+      {l:"Nächster Urlaub",v:`${fmt(v.from)} – ${fmt(v.to)}`},
+      {l:"Urlaubstage",v:`${v.workdays}`},
+      {l:"Noch",v:`${v.days} Tage · ${v.workLeft} Arbeitstage`,cls:"total"}
+    ]):`<p>Kein Urlaub geplant.</p>`}
+    ${sheetRows([
+      {l:"Anspruch",v:`${ent}`},
+      {l:"Genommen",v:`${taken}`},
+      {l:"Geplant",v:`${planned}`},
+      {l:"Rest (frei verplanbar)",v:`${ent-taken-planned}`,cls:"total"}
+    ])}
+    <div class="h-sheet-actions two">
+      <button type="button" class="h-btn primary" data-sheet-bulk>＋ Urlaub</button>
+      <button type="button" class="h-btn ghost" data-sheet-go="year">Jahr ›</button>
+    </div>`);
+}
+const HOME_SHEETS={day:sheetDay,pause:sheetPause,konto:sheetKonto,vacation:sheetVacation};
 function hExtras(){
   return hWeek()+hVacation()+hBridgeTip();
 }
@@ -1665,13 +1785,13 @@ function renderDay(){
   return `${openPastDayHTML()}<section class="h-hero" aria-label="Tag">
     <div class="h-hero-head"><span class="h-kicker">${isToday?"Heute":weekdayName(dateFromKey(key),false)}</span>${chip}</div>
     <div class="h-c">
-      <div class="h-c-big"><span>${big.lbl}</span><b class="${big.cls}">${big.val}<small>${big.unit}</small></b><span>${big.sub}</span></div>
-      <div class="h-c-rows">
+      <button type="button" class="h-c-big" data-sheet="day" aria-label="Tagesrechnung öffnen"><span>${big.lbl}</span><b class="${big.cls}">${big.val}<small>${big.unit}</small></b><span>${big.sub}</span></button>
+      <button type="button" class="h-c-rows" data-sheet="pause" aria-label="Pausen öffnen">
         <div class="h-c-row"><span>Arbeit</span><div class="val">${hDur(c.worked)} h<em>von ${hDur(c.target)}</em></div><div class="h-bar"><i class="lime" style="width:${workPct}%"></i></div></div>
         <div class="h-c-row"><span>Pause</span><div class="val pz">${pauseShown} Min<em>${pauseRunning?`seit ${ap.start}`:`von ${pausePlan}`}</em></div><div class="h-bar"><i class="or${pauseRunning?" run":""}" style="width:${pausePct}%"></i></div></div>
-      </div>
+      </button>
     </div>
-    ${hTimeline(rec,c,key)}
+    <button type="button" class="h-tl-btn" data-edit-day="${key}" aria-label="Tag bearbeiten">${hTimeline(rec,c,key)}</button>
   </section>
   <section class="h-actions">
     <button class="h-btn primary" id="finishDayBtn" ${done?"disabled":""}>${H_ICON.exit}${rec.end?"Erledigt":"Feierabend"}</button>
@@ -2410,6 +2530,11 @@ function bindDynamic(){
   document.querySelectorAll("[data-year-pick]").forEach(el=>el.addEventListener("click",()=>toggleMonthSelectedDate(el.dataset.yearPick)));
   const ty=$("thisYearBtn");
   if(ty) ty.addEventListener("click",()=>{yearCursor=new Date().getFullYear();render();});
+
+  document.querySelectorAll("[data-sheet]").forEach(el=>el.addEventListener("click",e=>{
+    e.stopPropagation();
+    HOME_SHEETS[el.dataset.sheet]?.();
+  }));
 
   const plannerBtn=$("openWeekPlannerBtn");
   if(plannerBtn) plannerBtn.addEventListener("click",openWeekPlanner);
@@ -3269,6 +3394,8 @@ function buildSettings(){
       <input type="number" min="0" max="180" step="5" id="qp${i}" value="${state.settings.quickPausePresets?.[i]??0}">
     </label>
   `).join("");
+  $("kontoStartInput").value=state.settings.kontoStartMin?hSigned(state.settings.kontoStartMin):"";
+  $("kontoStartDate").value=state.settings.kontoStartDate||"";
   $("plannedPauseInput").value=state.settings.plannedPauseMin;
   $("vacationEntitlementInput").value=state.settings.vacationEntitlement;
   $("breakReminder").checked=!!state.settings.breakReminder;
@@ -3297,7 +3424,10 @@ $("resetHomeLayoutBtn").addEventListener("click",()=>{
   updateSettingsSummaries();
   toast("Standard-Homescreen gewählt");
 });
-$("saveSettingsBtn").addEventListener("click",()=>{state.settings.weekdayTargets=Array.from({length:7},(_,i)=>Number($(`wd${i}`).value||0));state.settings.weekdayStartTimes=[$("ws0").value||"06:35",$("ws1").value||"06:35",$("ws2").value||"06:35",$("ws3").value||"06:35",$("ws4").value||"06:35","",""];state.settings.quickPausePresets=Array.from({length:4},(_,i)=>Math.max(0,Number($(`qp${i}`).value||0)));
+$("saveSettingsBtn").addEventListener("click",()=>{
+  const ks=parseSignedDuration($("kontoStartInput").value);
+  if(ks===null){toast("Übertrag nicht lesbar – z. B. 23:07 oder -2:30");return;}
+  state.settings.kontoStartMin=ks;state.settings.kontoStartDate=$("kontoStartDate").value||"";state.settings.weekdayTargets=Array.from({length:7},(_,i)=>Number($(`wd${i}`).value||0));state.settings.weekdayStartTimes=[$("ws0").value||"06:35",$("ws1").value||"06:35",$("ws2").value||"06:35",$("ws3").value||"06:35",$("ws4").value||"06:35","",""];state.settings.quickPausePresets=Array.from({length:4},(_,i)=>Math.max(0,Number($(`qp${i}`).value||0)));
   state.settings.plannedPauseMin=Number($("plannedPauseInput").value||0);state.settings.vacationEntitlement=Number($("vacationEntitlementInput").value||0);state.settings.breakReminder=$("breakReminder").checked;state.settings.autoHolidaysBW=$("autoHolidaysBW").checked;state.settings.demoSeed=$("demoSeed").checked;state.settings.pixelMeter=$("pixelMeterToggle").checked;updatePixelMeter();state.settings.homeWidgets.image=$("homeImageToggle").checked;document.querySelectorAll("[data-home-toggle]").forEach(ch=>state.settings.homeWidgets[ch.dataset.homeToggle]=ch.checked);state.settings.homeWidgets.timeline=true;state.settings.homeOrder=[...FIXED_HOME_ORDER];state.settings.homeLayoutVersion=4;Object.keys(holidayCache).forEach(k=>delete holidayCache[k]);save();$("settingsDialog").close();render();toast("Einstellungen gespeichert")});
 
 
@@ -3451,6 +3581,7 @@ function demoBuildState(scen){
   const v=new Date(today);v.setDate(v.getDate()+14);
   while(v.getDay()!==1) v.setDate(v.getDate()+1);
   for(let i=0;i<5;i++){const d=new Date(v);d.setDate(v.getDate()+i);st.records[localDateKey(d)]={status:"vacation",start:"",end:"",pauses:[],note:""};}
+  if(!st.settings.kontoStartMin){st.settings.kontoStartMin=23*60+7;st.settings.kontoStartDate=localDateKey(mon);}
   const t=DEMO_SCENARIOS[scen].today;
   if(t) st.records[todayK]={status:"work",start:t.start,end:t.end||"",pauses:t.pauses.map(([a,b])=>({start:a,end:b})),targetHours:8,note:""};
   return st;
@@ -3505,6 +3636,18 @@ function openDemoDialog(){
 }
 
 $("pixelMeter").addEventListener("click",openDemoDialog);
+$("sheetLayer").addEventListener("click",e=>{
+  const t=e.target;
+  if(t.matches("[data-sheet-close]")){closeSheet();return;}
+  const b=t.closest("button");
+  if(!b) return;
+  if(b.dataset.sheetEdit){closeSheet();openEdit(b.dataset.sheetEdit);return;}
+  if(b.dataset.sheetGo){closeSheet();currentView=b.dataset.sheetGo;weekOffset=0;if(currentView==="year")yearCursor=new Date().getFullYear();if(currentView==="month"){const d=new Date();monthCursor=new Date(d.getFullYear(),d.getMonth(),1);}updateNav();render();window.scrollTo(0,0);return;}
+  if(b.hasAttribute("data-sheet-bulk")){closeSheet();const d=new Date(Date.now()+86400000);openBulkVacation(localDateKey(d),localDateKey(d));return;}
+  if(b.hasAttribute("data-sheet-pause")){closeSheet();renderLivePauseDialog();$("pauseDialog").showModal();return;}
+  if(b.hasAttribute("data-sheet-settings")){closeSheet();buildSettings();document.querySelectorAll("#settingsDialog details.settings-accordion").forEach((d,i)=>d.open=i===0);$("settingsDialog").showModal();setTimeout(()=>$("kontoStartInput")?.focus(),50);return;}
+});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("sheetLayer").hidden)closeSheet();});
 $("openDemoBtn")?.addEventListener("click",()=>{ $("settingsDialog").close(); openDemoDialog(); });
 
 setInterval(()=>{

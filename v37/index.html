@@ -244,6 +244,17 @@
 
           <h3>Geplanter Arbeitsbeginn</h3>
           <div class="weekday-starts" id="weekdayStarts"></div>
+
+          <h3>Zeitkonto</h3>
+          <p class="settings-help">Stand laut Lohnabrechnung. Klokify zählt ab dem Datum weiter.</p>
+          <div class="form-grid">
+            <label>Übertrag (h:mm)
+              <input type="text" id="kontoStartInput" inputmode="text" autocomplete="off" placeholder="z. B. 23:07 · -2:30">
+            </label>
+            <label>gilt ab
+              <input type="date" id="kontoStartDate">
+            </label>
+          </div>
         </div>
       </details>
 
@@ -358,6 +369,7 @@
     </div>
   </dialog>
 
+  <div id="sheetLayer" hidden></div>
   <div id="toast" class="toast" role="status"></div>
   <button type="button" id="pixelMeter" class="pixel-meter" aria-label="Pixel-Messanzeige · Demo-Steuerung öffnen"></button>
 

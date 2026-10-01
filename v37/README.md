@@ -18,6 +18,13 @@ Woche, Monat, Jahr und Dialoge folgen in eigenen Schritten (Farben sind bereits 
 - **Woche:** Kopf wie im Monat – Pfeile für Woche vor/zurück, darunter „Woche planen“ und „Aktuelle Woche“ (ersetzt den halb verdeckten Knopf „Diese Woche“).
 - **Jahr:** Werkzeugleiste wie im Monat (＋ Zeitraum · Auswählen · Dieses Jahr). Im Auswahlmodus zweispaltig mit großen Tagen; Tage antippen, unten Urlaub/Krank/FZA/Frei/Kein Eintrag zuordnen. Die Zuordnungsleiste bleibt beim Scrollen sichtbar.
 - **Eigene Bestätigungen:** Alle Rückfragen (Überschreiben, Zurücksetzen auf „Kein Eintrag“, Sammelbuchung, Alles löschen) und Hinweise laufen über einen eigenen Dialog statt Browser-confirm()/alert(). Vorher funktionierten sie in eingebetteten Ansichten (z. B. Vorschau) nicht.
+- **Homescreen als Einstieg in tiefere Ebenen:** Jedes Element öffnet per Tipp ein Blatt von unten, ohne den Homescreen zu verlassen:
+  - „Noch …“ → Tagesrechnung (Beginn + Soll + Pause = Feierabend, 10-h-Grenze)
+  - Arbeit/Pause-Balken → Pausen von heute, Schnellpause, bearbeiten
+  - Zeitstrahl → Tag bearbeiten
+  - Wochenkopf → Zeitkonto (Heute/Woche/Monat/Jahr/Übertrag/Gesamt) → Woche ›, Monat ›
+  - Urlaubsleiste → Urlaub (nächster, genommen/geplant/Rest) → ＋ Urlaub, Jahr ›
+- **Zeitkonto:** im Wochenkopf „Konto +23:52 h“. Einstellungen → Arbeitszeit → Zeitkonto: Übertrag (h:mm oder Dezimal, auch negativ) und Startdatum.
 - **Prognose korrigiert:** Nach der ersten echten Pause rechnet der Feierabend mindestens mit der gesetzlichen Pause fürs Tagessoll (§ 4 ArbZG). Vorher zog eine 15-Min-Pause den Feierabend fälschlich nach vorne.
 - **Hinweise ruhiger:** „Pause läuft“ steht im Tagesbereich statt als eigene Karte. 10-h-Grenze als eine Zeile, sobald das Soll erreicht ist.
 - **Kopfzeile:** Datum antippen springt zurück zu heute.
