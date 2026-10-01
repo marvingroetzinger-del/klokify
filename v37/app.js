@@ -2024,8 +2024,10 @@ function monthStats(year,month){
 let monthMode="cal";
 try{monthMode=localStorage.getItem("klokify-month-mode")||"cal";}catch{}
 function setMonthMode(m){monthMode=m;try{localStorage.setItem("klokify-month-mode",m);}catch{}render();}
-function fmtH(min){return hDur(min);}
-function fmtSigned(min){return Math.round(min||0)===0?"0:00":hSigned(min);}
+// Monatsliste in Dezimalstunden (wie auf der Lohnabrechnung): 8:15 h = 8,25
+function decH(min){return (Math.round(min||0)/60).toFixed(2).replace(".",",");}
+function fmtH(min){return decH(Math.abs(min||0));}
+function fmtSigned(min){const r=Math.round(min||0);return r===0?"0,00":`${r>0?"+":"−"}${decH(Math.abs(r))}`;}
 function monthListRow(key){
   const d=dateFromKey(key),todayK=localDateKey(new Date());
   const status=effectiveStatus(key),rec=state.records[key];
@@ -2094,7 +2096,7 @@ function renderMonthList(y,m){
       <tbody>${html}</tbody>
       <tfoot><tr><td colspan="3">${monthName(m)}</td><td>${fmtH(mon.soll)}</td><td>${fmtH(mon.ist)}</td><td class="${mon.bal>=0?"pos":"neg"}">${fmtSigned(mon.bal)}</td></tr></tfoot>
     </table>
-    <p class="h-mlist-note">Summen über gebuchte Tage · Pause in Min · Zeile antippen = bearbeiten${homeOpt("konto")?` · Konto gesamt <b class="${kontoBalance()>=0?"pos":"neg"}">${hSigned(kontoBalance())} h</b>`:""}</p>
+    <p class="h-mlist-note">Stunden dezimal (8,25 = 8 h 15 min) · Pause in Min · Summen über gebuchte Tage · Zeile antippen = bearbeiten${homeOpt("konto")?` · Konto gesamt <b class="${kontoBalance()>=0?"pos":"neg"}">${fmtSigned(kontoBalance())}</b>`:""}</p>
   </section>`;
 }
 function renderMonth(){
