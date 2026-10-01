@@ -2992,6 +2992,7 @@ function addSmartPause(){
 }
 
 function renderPauseEditor(){
+  setTimeout(updateEditPreview,0);
   const box=$("pauseRows");
   const quick=$("editQuickPauseButtons");
   const presets=getQuickPausePresets();
@@ -3135,6 +3136,50 @@ function validateWorkEditDraft(){
   return null;
 }
 
+
+/* ── V37 Tag bearbeiten: Typ-Chips, „jetzt“, Live-Vorschau ── */
+const EDIT_TYPES=[["work","Arbeit"],["vacation","Urlaub"],["sick","Krank"],["flex","FZA"],["off","Frei"],["specialLeave","Sonderurlaub"],["holiday","Feiertag"],["clear","Kein Eintrag"]];
+function renderEditTypeChips(){
+  const cur=$("editStatus").value;
+  $("editTypeChips").innerHTML=EDIT_TYPES.map(([v,l])=>`<button type="button" class="e-type ${v}" data-edit-type="${v}" role="radio" aria-checked="${v===cur}">${l}</button>`).join("");
+  $("editTypeChips").querySelectorAll("[data-edit-type]").forEach(b=>b.onclick=()=>{
+    $("editStatus").value=b.dataset.editType;
+    $("editStatus").dispatchEvent(new Event("change"));
+    renderEditTypeChips();updateEditPreview();
+  });
+}
+function updateEditPreview(){
+  const el=$("editPreview");
+  if(!el) return;
+  const status=$("editStatus").value;
+  const target=Math.round((Number($("editTarget").value)||0)*60);
+  if(status==="clear"){el.innerHTML=`<span>Tag wird auf <b>Kein Eintrag</b> zurückgesetzt</span>`;return;}
+  if(status!=="work"){
+    const credited=["vacation","specialLeave","sick","holiday","flex"].includes(status);
+    el.innerHTML=credited?`<span>${STATUS[status].label} · <b>${hDur(target)} h</b> gutgeschrieben · Saldo <b class="pos">0:00</b></span>`:`<span>Frei · kein Soll</span>`;
+    return;
+  }
+  const mp=parseWorkDurationInput($("editManualWorked").value);
+  const manual=mp&&!mp.error?mp.minutes:null;
+  const a=minutesFromTime($("editStart").value),eRaw=minutesFromTime($("editEnd").value);
+  const isToday=editDateKey===localDateKey(new Date());
+  if(a===null&&manual){
+    const bal=manual-target;
+    el.innerHTML=`<span>Sammelbuchung <b>${hDur(manual)} h</b> · Saldo <b class="${bal>=0?"pos":"neg"}">${hSigned(bal)} h</b></span>`;return;
+  }
+  if(a===null){el.innerHTML=`<span>Beginn fehlt noch</span>`;return;}
+  const e=eRaw!==null?eRaw:(isToday?minutesFromTime(nowTime()):null);
+  if(e===null){el.innerHTML=`<span>Ende fehlt noch</span>`;return;}
+  let pause=0;
+  editPauses.forEach(p=>{
+    const fx=Number(p.minutes)||0;
+    if(fx&&!p.start){pause+=fx;return;}
+    const ps=minutesFromTime(p.start),pe=minutesFromTime(p.end)??(isToday&&eRaw===null?e:null);
+    if(ps!==null&&pe!==null&&pe>ps) pause+=Math.min(pe,e)-Math.max(ps,a)>0?Math.min(pe,e)-Math.max(ps,a):0;
+  });
+  const worked=Math.max(0,e-a-pause),bal=worked-target;
+  el.innerHTML=`<span>${eRaw===null?"bis jetzt · ":""}Arbeit <b>${hDur(worked)} h</b> · Pause <b>${pause} Min</b> · Saldo <b class="${bal>=0?"pos":"neg"}">${hSigned(bal)} h</b></span>`;
+}
 function openEdit(key){
   captureEditOrigin();
   editDateKey=key;
@@ -3160,10 +3205,13 @@ function openEdit(key){
     return fixed>0 && !p.start ? {start:"",end:"",minutes:fixed} : {start:p.start||"",end:p.end||""};
   });
   toggleWorkFields();renderPauseEditor();
+  renderEditTypeChips();
+  $("editEndNow").hidden=!(key===localDateKey(new Date())&&!rec.end);
   clearEditValidation();
   $("smartPauseInput").value="";
   updateSmartPausePreview();
   $("editDialog").showModal();
+  updateEditPreview();
 }
 function toggleWorkFields(){
   const status=$("editStatus").value;
@@ -3183,7 +3231,10 @@ function toggleWorkFields(){
     hint.remove();
   }
 }
-$("editStatus").addEventListener("change",()=>{toggleWorkFields();clearEditValidation();});
+$("editStatus").addEventListener("change",()=>{toggleWorkFields();clearEditValidation();updateEditPreview();});
+["editStart","editEnd","editTarget","editManualWorked"].forEach(id=>$(id).addEventListener("input",updateEditPreview));
+$("pauseRows").addEventListener("change",()=>setTimeout(updateEditPreview,0));
+$("editEndNow").addEventListener("click",()=>{$("editEnd").value=nowTime();$("editEndNow").hidden=true;updateEditPreview();});
 $("addPauseRowBtn").addEventListener("click",()=>{
   editPauses.push({start:"",end:""});renderPauseEditor();
 });

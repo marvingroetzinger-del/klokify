@@ -35,7 +35,7 @@
     </nav>
   </div>
 
-  <dialog id="editDialog" class="dialog">
+  <dialog id="editDialog" class="dialog edit37">
     <form id="editForm">
       <div class="dialog-head">
         <div>
@@ -45,7 +45,8 @@
         <button type="button" class="icon-btn mini" data-close="editDialog">×</button>
       </div>
 
-      <label>Tagestyp
+      <div class="e-types" id="editTypeChips" role="radiogroup" aria-label="Tagestyp"></div>
+      <label class="e-hidden-select">Tagestyp
         <select id="editStatus">
           <option value="work">Arbeit</option>
           <option value="vacation">Urlaub</option>
@@ -61,7 +62,7 @@
       <div id="workFields">
         <div class="form-grid">
           <label>Beginn <input type="time" id="editStart"></label>
-          <label>Ende <input type="time" id="editEnd"></label>
+          <label><span class="e-lbl">Ende <button type="button" class="e-now" id="editEndNow" hidden>jetzt</button></span><input type="time" id="editEnd"></label>
         </div>
 
         <div class="subhead-row pause-subhead-row">
@@ -73,8 +74,11 @@
         </div>
         <div id="pauseRows"></div>
 
+        <details class="edit-advanced" id="editAdvanced">
+          <summary>Weitere Optionen</summary>
+          <div class="edit-advanced-panel">
         <div class="smart-pause-box">
-          <div class="smart-pause-title">Pausendauer ohne Uhrzeit</div>
+          <div class="smart-pause-title">Pause nur als Dauer (eigener Wert)</div>
           <div class="smart-pause-row">
             <input type="text" id="smartPauseInput" inputmode="decimal" autocomplete="off"
                    placeholder="z. B. 10 · 15 · 1:30">
@@ -83,9 +87,7 @@
           <div class="smart-pause-preview" id="smartPausePreview">Für Pausen, bei denen nur die Dauer bekannt ist.</div>
         </div>
 
-        <details class="edit-advanced" id="editAdvanced">
-          <summary>Weitere Optionen</summary>
-          <div class="edit-advanced-panel">
+
             <div class="manual-work-box">
               <label>Arbeitszeit direkt
                 <input type="text" id="editManualWorked" inputmode="decimal" autocomplete="off"
@@ -105,7 +107,8 @@
 
       <div id="editValidation" class="edit-validation" role="alert" hidden></div>
 
-      <div class="dialog-actions">
+      <div class="dialog-actions e-actions">
+        <div class="e-preview" id="editPreview" aria-live="polite"></div>
         <button type="button" class="ghost-btn" data-close="editDialog">Abbrechen</button>
         <button type="submit" class="primary-small">Speichern</button>
       </div>

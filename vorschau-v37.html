@@ -2771,6 +2771,39 @@ button:disabled{cursor:default;opacity:.5}
 .h-bridge-row.outlook .h-bridge-ratio b{color:var(--blue)}
 .h-bridge-row.outlook .h-bridge-ratio small{color:var(--blue)}
 
+/* ════ V37 Tag bearbeiten ════ */
+.edit37{padding-bottom:0}
+.edit37 form{display:flex;flex-direction:column;gap:14px}
+.edit37 .e-hidden-select{display:none}
+.e-types{display:flex;flex-wrap:wrap;gap:6px}
+.e-type{border:0;border-radius:10px;padding:10px 12px;background:var(--panel2);color:var(--text);font:600 var(--fs-s)/1 var(--font-ui)}
+.e-type[aria-checked="true"]{background:var(--lime);color:#18210a}
+.e-type.vacation[aria-checked="true"]{background:var(--orange);color:#2a1a04}
+.e-type.sick[aria-checked="true"]{background:var(--danger);color:#2a0b0a}
+.e-type.flex[aria-checked="true"]{background:var(--violet);color:#160d2b}
+.e-type.holiday[aria-checked="true"],.e-type.specialLeave[aria-checked="true"]{background:var(--blue);color:#0b1a2a}
+.e-type.clear{color:var(--danger)}
+.e-type.clear[aria-checked="true"]{background:var(--danger);color:#2a0b0a}
+.edit37 input,.edit37 select{font:600 var(--fs-m)/1.2 var(--font-num)!important;min-height:48px}
+.edit37 label{font-size:var(--fs-s)}
+.e-lbl{display:flex;justify-content:space-between;align-items:center}
+.e-now{border:0;border-radius:8px;padding:4px 10px;background:rgba(182,226,76,.16);color:var(--lime);font:700 var(--fs-s)/1 var(--font-ui)}
+.e-now[hidden]{display:none}
+.edit37 .pause-subhead-row{display:flex;flex-direction:column;align-items:stretch;gap:8px}
+.edit37 .pause-subhead-row h3{margin:0;font-size:var(--fs-m)}
+.edit37 .pause-head-actions{max-width:none!important;display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-start}
+.edit37 .edit-quick-pause-row{display:flex;gap:6px;flex-wrap:wrap}
+.edit37 .edit-quick-pause-row button,.edit37 #addPauseRowBtn{min-height:40px;padding:0 12px;border-radius:10px;font:600 var(--fs-s)/1 var(--font-ui)!important}
+.edit37 .pause-edit-row{display:grid;grid-template-columns:minmax(0,1fr) 14px minmax(0,1fr) 44px;gap:6px;align-items:center;margin-bottom:6px}
+.edit37 .pause-edit-row input{width:100%;min-width:0}
+.edit37 .pause-delete{width:44px;height:48px;border-radius:10px}
+.edit37 .fixed-pause-row{grid-template-columns:minmax(0,1fr) 44px}
+.edit37 .no-pauses{font-size:var(--fs-s);color:var(--muted)}
+.e-actions{position:sticky;bottom:0;margin:0 -20px;padding:10px 20px calc(14px + env(safe-area-inset-bottom));background:var(--panel);border-top:1px solid var(--line);display:grid!important;grid-template-columns:1fr 1fr;gap:8px;z-index:2}
+.e-preview{grid-column:1/-1;font:500 var(--fs-s)/1.35 var(--font-num);color:var(--muted)}
+.e-preview b{color:var(--text);font-weight:700}
+.e-preview b.pos{color:var(--lime)} .e-preview b.neg{color:var(--danger)}
+
 </style>
 
   <div class="app-shell">
@@ -2793,7 +2826,7 @@ button:disabled{cursor:default;opacity:.5}
     </nav>
   </div>
 
-  <dialog id="editDialog" class="dialog">
+  <dialog id="editDialog" class="dialog edit37">
     <form id="editForm">
       <div class="dialog-head">
         <div>
@@ -2803,7 +2836,8 @@ button:disabled{cursor:default;opacity:.5}
         <button type="button" class="icon-btn mini" data-close="editDialog">×</button>
       </div>
 
-      <label>Tagestyp
+      <div class="e-types" id="editTypeChips" role="radiogroup" aria-label="Tagestyp"></div>
+      <label class="e-hidden-select">Tagestyp
         <select id="editStatus">
           <option value="work">Arbeit</option>
           <option value="vacation">Urlaub</option>
@@ -2819,7 +2853,7 @@ button:disabled{cursor:default;opacity:.5}
       <div id="workFields">
         <div class="form-grid">
           <label>Beginn <input type="time" id="editStart"></label>
-          <label>Ende <input type="time" id="editEnd"></label>
+          <label><span class="e-lbl">Ende <button type="button" class="e-now" id="editEndNow" hidden>jetzt</button></span><input type="time" id="editEnd"></label>
         </div>
 
         <div class="subhead-row pause-subhead-row">
@@ -2831,8 +2865,11 @@ button:disabled{cursor:default;opacity:.5}
         </div>
         <div id="pauseRows"></div>
 
+        <details class="edit-advanced" id="editAdvanced">
+          <summary>Weitere Optionen</summary>
+          <div class="edit-advanced-panel">
         <div class="smart-pause-box">
-          <div class="smart-pause-title">Pausendauer ohne Uhrzeit</div>
+          <div class="smart-pause-title">Pause nur als Dauer (eigener Wert)</div>
           <div class="smart-pause-row">
             <input type="text" id="smartPauseInput" inputmode="decimal" autocomplete="off"
                    placeholder="z. B. 10 · 15 · 1:30">
@@ -2841,9 +2878,7 @@ button:disabled{cursor:default;opacity:.5}
           <div class="smart-pause-preview" id="smartPausePreview">Für Pausen, bei denen nur die Dauer bekannt ist.</div>
         </div>
 
-        <details class="edit-advanced" id="editAdvanced">
-          <summary>Weitere Optionen</summary>
-          <div class="edit-advanced-panel">
+
             <div class="manual-work-box">
               <label>Arbeitszeit direkt
                 <input type="text" id="editManualWorked" inputmode="decimal" autocomplete="off"
@@ -2863,7 +2898,8 @@ button:disabled{cursor:default;opacity:.5}
 
       <div id="editValidation" class="edit-validation" role="alert" hidden></div>
 
-      <div class="dialog-actions">
+      <div class="dialog-actions e-actions">
+        <div class="e-preview" id="editPreview" aria-live="polite"></div>
         <button type="button" class="ghost-btn" data-close="editDialog">Abbrechen</button>
         <button type="submit" class="primary-small">Speichern</button>
       </div>
@@ -6132,6 +6168,7 @@ function addSmartPause(){
 }
 
 function renderPauseEditor(){
+  setTimeout(updateEditPreview,0);
   const box=$("pauseRows");
   const quick=$("editQuickPauseButtons");
   const presets=getQuickPausePresets();
@@ -6275,6 +6312,50 @@ function validateWorkEditDraft(){
   return null;
 }
 
+
+/* ── V37 Tag bearbeiten: Typ-Chips, „jetzt“, Live-Vorschau ── */
+const EDIT_TYPES=[["work","Arbeit"],["vacation","Urlaub"],["sick","Krank"],["flex","FZA"],["off","Frei"],["specialLeave","Sonderurlaub"],["holiday","Feiertag"],["clear","Kein Eintrag"]];
+function renderEditTypeChips(){
+  const cur=$("editStatus").value;
+  $("editTypeChips").innerHTML=EDIT_TYPES.map(([v,l])=>`<button type="button" class="e-type ${v}" data-edit-type="${v}" role="radio" aria-checked="${v===cur}">${l}</button>`).join("");
+  $("editTypeChips").querySelectorAll("[data-edit-type]").forEach(b=>b.onclick=()=>{
+    $("editStatus").value=b.dataset.editType;
+    $("editStatus").dispatchEvent(new Event("change"));
+    renderEditTypeChips();updateEditPreview();
+  });
+}
+function updateEditPreview(){
+  const el=$("editPreview");
+  if(!el) return;
+  const status=$("editStatus").value;
+  const target=Math.round((Number($("editTarget").value)||0)*60);
+  if(status==="clear"){el.innerHTML=`<span>Tag wird auf <b>Kein Eintrag</b> zurückgesetzt</span>`;return;}
+  if(status!=="work"){
+    const credited=["vacation","specialLeave","sick","holiday","flex"].includes(status);
+    el.innerHTML=credited?`<span>${STATUS[status].label} · <b>${hDur(target)} h</b> gutgeschrieben · Saldo <b class="pos">0:00</b></span>`:`<span>Frei · kein Soll</span>`;
+    return;
+  }
+  const mp=parseWorkDurationInput($("editManualWorked").value);
+  const manual=mp&&!mp.error?mp.minutes:null;
+  const a=minutesFromTime($("editStart").value),eRaw=minutesFromTime($("editEnd").value);
+  const isToday=editDateKey===localDateKey(new Date());
+  if(a===null&&manual){
+    const bal=manual-target;
+    el.innerHTML=`<span>Sammelbuchung <b>${hDur(manual)} h</b> · Saldo <b class="${bal>=0?"pos":"neg"}">${hSigned(bal)} h</b></span>`;return;
+  }
+  if(a===null){el.innerHTML=`<span>Beginn fehlt noch</span>`;return;}
+  const e=eRaw!==null?eRaw:(isToday?minutesFromTime(nowTime()):null);
+  if(e===null){el.innerHTML=`<span>Ende fehlt noch</span>`;return;}
+  let pause=0;
+  editPauses.forEach(p=>{
+    const fx=Number(p.minutes)||0;
+    if(fx&&!p.start){pause+=fx;return;}
+    const ps=minutesFromTime(p.start),pe=minutesFromTime(p.end)??(isToday&&eRaw===null?e:null);
+    if(ps!==null&&pe!==null&&pe>ps) pause+=Math.min(pe,e)-Math.max(ps,a)>0?Math.min(pe,e)-Math.max(ps,a):0;
+  });
+  const worked=Math.max(0,e-a-pause),bal=worked-target;
+  el.innerHTML=`<span>${eRaw===null?"bis jetzt · ":""}Arbeit <b>${hDur(worked)} h</b> · Pause <b>${pause} Min</b> · Saldo <b class="${bal>=0?"pos":"neg"}">${hSigned(bal)} h</b></span>`;
+}
 function openEdit(key){
   captureEditOrigin();
   editDateKey=key;
@@ -6300,10 +6381,13 @@ function openEdit(key){
     return fixed>0 && !p.start ? {start:"",end:"",minutes:fixed} : {start:p.start||"",end:p.end||""};
   });
   toggleWorkFields();renderPauseEditor();
+  renderEditTypeChips();
+  $("editEndNow").hidden=!(key===localDateKey(new Date())&&!rec.end);
   clearEditValidation();
   $("smartPauseInput").value="";
   updateSmartPausePreview();
   $("editDialog").showModal();
+  updateEditPreview();
 }
 function toggleWorkFields(){
   const status=$("editStatus").value;
@@ -6323,7 +6407,10 @@ function toggleWorkFields(){
     hint.remove();
   }
 }
-$("editStatus").addEventListener("change",()=>{toggleWorkFields();clearEditValidation();});
+$("editStatus").addEventListener("change",()=>{toggleWorkFields();clearEditValidation();updateEditPreview();});
+["editStart","editEnd","editTarget","editManualWorked"].forEach(id=>$(id).addEventListener("input",updateEditPreview));
+$("pauseRows").addEventListener("change",()=>setTimeout(updateEditPreview,0));
+$("editEndNow").addEventListener("click",()=>{$("editEnd").value=nowTime();$("editEndNow").hidden=true;updateEditPreview();});
 $("addPauseRowBtn").addEventListener("click",()=>{
   editPauses.push({start:"",end:""});renderPauseEditor();
 });
