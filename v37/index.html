@@ -302,17 +302,21 @@
           <span class="settings-chevron">⌄</span>
         </summary>
         <div class="settings-accordion-panel">
-          <p class="settings-help core-home-help">Feierabend, Fortschritt, Tageslogik und Arbeitsaktionen sind fest. Nur Zusatzinfos lassen sich ein- oder ausblenden.</p>
+          <p class="settings-help core-home-help">Fest: Tagesbereich, Aktionen, Wochenzeile und Hinweise. Eine Notiz erscheint automatisch, wenn der Tag eine hat.</p>
 
-          <label class="home-image-toggle">
-            <span class="home-layout-icon">◫</span>
-            <span class="home-layout-copy"><b>Feierabendmotiv</b><small>Bild im oberen Tagesbereich</small></span>
-            <input type="checkbox" id="homeImageToggle">
+          <label class="toggle-line">
+            <span>Zeitkonto im Wochenkopf<small class="toggle-sub">für Gleitzeit / Überstunden</small></span>
+            <input type="checkbox" id="homeKontoToggle">
           </label>
-
-          <div class="home-layout-caption">Optionale Zusatzinfos</div>
-          <div id="homeLayoutList" class="home-layout-list home-layout-list-fixed"></div>
-          <button type="button" class="ghost-btn full compact-reset" id="resetHomeLayoutBtn">Standardansicht</button>
+          <label class="toggle-line">
+            <span>Urlaubsleiste<small class="toggle-sub">Countdown bis zum nächsten Urlaub</small></span>
+            <input type="checkbox" id="homeVacationToggle">
+          </label>
+          <label class="toggle-line">
+            <span>Brückentag-Tipps<small class="toggle-sub">Hinweis bis 3 Monate vorher</small></span>
+            <input type="checkbox" id="homeBridgeToggle">
+          </label>
+          <button type="button" class="ghost-btn full" id="resetBridgeTipsBtn">Ausgeblendete Tipps wieder zeigen</button>
         </div>
       </details>
 

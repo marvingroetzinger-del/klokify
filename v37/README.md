@@ -25,6 +25,7 @@ Woche, Monat, Jahr und Dialoge folgen in eigenen Schritten (Farben sind bereits 
   - Wochenkopf → Zeitkonto (Heute/Woche/Monat/Jahr/Übertrag/Gesamt) → Woche ›, Monat ›
   - Urlaubsleiste → Urlaub (nächster, genommen/geplant/Rest) → ＋ Urlaub, Jahr ›
 - **Zeitkonto:** im Wochenkopf „Konto +23:52 h“. Einstellungen → Arbeitszeit → Zeitkonto: Übertrag (h:mm oder Dezimal, auch negativ) und Startdatum.
+- **Einstellungen → Homescreen neu:** fest sind Tagesbereich, Aktionen, Wochenzeile, Hinweise; Notiz erscheint automatisch (antippen = bearbeiten). Abschaltbar: Zeitkonto im Wochenkopf, Urlaubsleiste, Brückentag-Tipps (+ ausgeblendete Tipps wieder zeigen). Feierabendmotiv und alte Bausteine (Abwesenheit, Wochenleiste, Saldo-/Freitagskarte) entfernt.
 - **Prognose korrigiert:** Nach der ersten echten Pause rechnet der Feierabend mindestens mit der gesetzlichen Pause fürs Tagessoll (§ 4 ArbZG). Vorher zog eine 15-Min-Pause den Feierabend fälschlich nach vorne.
 - **Hinweise ruhiger:** „Pause läuft“ steht im Tagesbereich statt als eigene Karte. 10-h-Grenze als eine Zeile, sobald das Soll erreicht ist.
 - **Kopfzeile:** Datum antippen springt zurück zu heute.

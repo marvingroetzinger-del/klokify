@@ -2659,3 +2659,9 @@ button:disabled{cursor:default;opacity:.5}
 .h-row b.pos{color:var(--lime)}
 .h-sheet-actions{display:flex;flex-direction:column;gap:8px}
 .h-sheet-actions.two{display:grid;grid-template-columns:1fr 1fr}
+
+/* V37 Einstellungen Homescreen + Notiz */
+.toggle-sub{display:block;font-size:var(--fs-s);color:var(--muted);font-weight:500;margin-top:2px}
+#resetBridgeTipsBtn[hidden]{display:none}
+.h-note{display:flex;gap:10px;align-items:baseline;width:100%;text-align:left;padding:10px 14px;border:0;border-radius:12px;background:var(--panel);color:var(--text);font:500 var(--fs-m)/1.35 var(--font-ui)}
+.h-note span{flex:none;font-size:var(--fs-s);font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}

@@ -1394,7 +1394,7 @@ function hWeek(){
     sub="Wochensaldo";
   }
   return `<section class="h-week">
-    <button type="button" class="h-week-head" data-sheet="konto" aria-label="Zeitkonto öffnen"><span><span class="h-kicker">Woche ${isoWeekNumber(sel)}</span><b class="${bal>=0?"pos":"neg"}">${hSigned(bal)}</b></span><span class="h-konto"><small>Konto</small><b class="${kontoBalance()>=0?"pos":"neg"}">${hSigned(kontoBalance())} h</b><i>›</i></span></button>
+    <button type="button" class="h-week-head" data-sheet="konto" aria-label="Zeitkonto öffnen"><span><span class="h-kicker">Woche ${isoWeekNumber(sel)}</span><b class="${bal>=0?"pos":"neg"}">${hSigned(bal)}</b></span>${homeOpt("konto")?`<span class="h-konto"><small>Konto</small><b class="${kontoBalance()>=0?"pos":"neg"}">${hSigned(kontoBalance())} h</b><i>›</i></span>`:`<span class="h-konto"><small>${sub}</small><i>›</i></span>`}</button>
     <div class="h-days">${cells.join("")}</div>
   </section>`;
 }
@@ -1708,8 +1708,13 @@ function sheetVacation(){
     </div>`);
 }
 const HOME_SHEETS={day:sheetDay,pause:sheetPause,konto:sheetKonto,vacation:sheetVacation};
+function hNote(key){
+  const note=state.records[key]?.note;
+  if(!note) return "";
+  return `<button type="button" class="h-note" data-edit-day="${key}"><span>Notiz</span>${escapeHtml(note)}</button>`;
+}
 function hExtras(){
-  return hWeek()+hVacation()+hBridgeTip();
+  return hWeek()+(homeOpt("vacation")?hVacation():"")+(homeOpt("bridge")?hBridgeTip():"");
 }
 
 function renderTypedDay(key,status){
@@ -1798,7 +1803,7 @@ function renderDay(){
     <button class="h-btn pause${pauseActive?" active":""}" id="pauseBtn" ${done?"disabled":""}>${pauseActive?H_ICON.play:H_ICON.pause}<span>${pauseActive?"Weiter":"Pause"}</span></button>
     <button class="h-btn" data-edit-day="${key}">${H_ICON.edit}<span>Ändern</span></button>
   </section>
-  ${contextualDayHint(key,rec,c)}${hLimitHint(key,rec,c)}${hExtras()}`;
+  ${contextualDayHint(key,rec,c)}${hLimitHint(key,rec,c)}${hNote(key)}${hExtras()}`;
 }
 function hLimitHint(key,rec,c){
   // 10-h-Grenze ruhig anzeigen, sobald das Soll erreicht ist (die Warnung ab 9:30 h kommt aus contextualDayHint)
@@ -3339,24 +3344,6 @@ $("saveBulkBtn").addEventListener("click",async()=>{
 });
 
 /* ── Settings ── */
-const HOME_WIDGET_META={
-  saldo:{label:"Saldo",sub:"Woche / Monat / Jahr",icon:"Σ"},
-  friday:{label:"Freitags-Prognose",sub:"Wochenziel & frühes Gehen",icon:"⌁"},
-  statuses:{label:"Abwesenheit",sub:"Urlaub, Krank, FZA …",icon:"○"},
-  week:{label:"Wochenleiste",sub:"Mo bis So",icon:"7"},
-  note:{label:"Notiz",sub:"nur wenn vorhanden",icon:"✎"}
-};
-function renderHomeLayoutSettings(){
-  $("homeLayoutList").innerHTML=FIXED_HOME_ORDER.map(id=>{
-    const m=HOME_WIDGET_META[id],on=state.settings.homeWidgets[id]!==false;
-    return `<div class="home-layout-item">
-      <span class="home-layout-icon">${m.icon}</span>
-      <label class="home-layout-copy"><b>${m.label}</b><small>${m.sub}</small></label>
-      <input type="checkbox" class="home-layout-check" data-home-toggle="${id}" ${on?"checked":""}>
-    </div>`;
-  }).join("");
-}
-
 function settingsWorkSummary(){
   const vals=(state.settings.weekdayTargets||[]).map(Number);
   const active=vals.filter(v=>v>0);
@@ -3374,9 +3361,10 @@ function settingsCalendarSummary(){
   const vac=Number(state.settings.vacationEntitlement)||0;
   return `${String(vac).replace(".",",")} Tage · Feiertage ${state.settings.autoHolidaysBW?"an":"aus"}`;
 }
+function homeOpt(id){return (state.settings.home||{})[id]!==false;}
 function settingsHomeSummary(){
-  const extras=FIXED_HOME_ORDER.filter(id=>state.settings.homeWidgets[id]!==false).length;
-  return `Motiv ${state.settings.homeWidgets.image!==false?"an":"aus"} · ${extras} Zusatzinfos`;
+  const on=[["konto","Konto"],["vacation","Urlaub"],["bridge","Tipps"]].filter(([k])=>homeOpt(k)).map(([,l])=>l);
+  return on.length?on.join(" · "):"nur Kern";
 }
 function updateSettingsSummaries(){
   if($("settingsSummaryWork")) $("settingsSummaryWork").textContent=settingsWorkSummary();
@@ -3402,8 +3390,12 @@ function buildSettings(){
   $("pixelMeterToggle").checked=state.settings.pixelMeter!==false;
   $("autoHolidaysBW").checked=!!state.settings.autoHolidaysBW;
   $("demoSeed").checked=!!state.settings.demoSeed;
-  $("homeImageToggle").checked=state.settings.homeWidgets.image!==false;
-  renderHomeLayoutSettings();
+  $("homeKontoToggle").checked=homeOpt("konto");
+  $("homeVacationToggle").checked=homeOpt("vacation");
+  $("homeBridgeToggle").checked=homeOpt("bridge");
+  const hidden=(state.settings.dismissedBridgeTips||[]).length;
+  $("resetBridgeTipsBtn").hidden=!hidden;
+  $("resetBridgeTipsBtn").textContent=`${hidden} ausgeblendete${hidden===1?"n Tipp":" Tipps"} wieder zeigen`;
   updateSettingsSummaries();
 }
 $("headerDate").addEventListener("click",()=>{
@@ -3416,19 +3408,16 @@ $("settingsBtn").addEventListener("click",()=>{
   document.querySelectorAll("#settingsDialog details.settings-accordion").forEach((d,i)=>d.open=i===0);
   $("settingsDialog").showModal();
 });
-$("resetHomeLayoutBtn").addEventListener("click",()=>{
-  state.settings.homeWidgets={...defaultSettings.homeWidgets,timeline:true};
-  state.settings.homeOrder=[...FIXED_HOME_ORDER];
-  $("homeImageToggle").checked=defaultSettings.homeWidgets.image;
-  renderHomeLayoutSettings();
-  updateSettingsSummaries();
-  toast("Standard-Homescreen gewählt");
+$("resetBridgeTipsBtn").addEventListener("click",()=>{
+  state.settings.dismissedBridgeTips=[];
+  save();$("resetBridgeTipsBtn").hidden=true;render();
+  toast("Brückentag-Tipps werden wieder gezeigt");
 });
 $("saveSettingsBtn").addEventListener("click",()=>{
   const ks=parseSignedDuration($("kontoStartInput").value);
   if(ks===null){toast("Übertrag nicht lesbar – z. B. 23:07 oder -2:30");return;}
   state.settings.kontoStartMin=ks;state.settings.kontoStartDate=$("kontoStartDate").value||"";state.settings.weekdayTargets=Array.from({length:7},(_,i)=>Number($(`wd${i}`).value||0));state.settings.weekdayStartTimes=[$("ws0").value||"06:35",$("ws1").value||"06:35",$("ws2").value||"06:35",$("ws3").value||"06:35",$("ws4").value||"06:35","",""];state.settings.quickPausePresets=Array.from({length:4},(_,i)=>Math.max(0,Number($(`qp${i}`).value||0)));
-  state.settings.plannedPauseMin=Number($("plannedPauseInput").value||0);state.settings.vacationEntitlement=Number($("vacationEntitlementInput").value||0);state.settings.breakReminder=$("breakReminder").checked;state.settings.autoHolidaysBW=$("autoHolidaysBW").checked;state.settings.demoSeed=$("demoSeed").checked;state.settings.pixelMeter=$("pixelMeterToggle").checked;updatePixelMeter();state.settings.homeWidgets.image=$("homeImageToggle").checked;document.querySelectorAll("[data-home-toggle]").forEach(ch=>state.settings.homeWidgets[ch.dataset.homeToggle]=ch.checked);state.settings.homeWidgets.timeline=true;state.settings.homeOrder=[...FIXED_HOME_ORDER];state.settings.homeLayoutVersion=4;Object.keys(holidayCache).forEach(k=>delete holidayCache[k]);save();$("settingsDialog").close();render();toast("Einstellungen gespeichert")});
+  state.settings.plannedPauseMin=Number($("plannedPauseInput").value||0);state.settings.vacationEntitlement=Number($("vacationEntitlementInput").value||0);state.settings.breakReminder=$("breakReminder").checked;state.settings.autoHolidaysBW=$("autoHolidaysBW").checked;state.settings.demoSeed=$("demoSeed").checked;state.settings.pixelMeter=$("pixelMeterToggle").checked;updatePixelMeter();state.settings.home={konto:$("homeKontoToggle").checked,vacation:$("homeVacationToggle").checked,bridge:$("homeBridgeToggle").checked};Object.keys(holidayCache).forEach(k=>delete holidayCache[k]);save();$("settingsDialog").close();render();toast("Einstellungen gespeichert")});
 
 
 
