@@ -1471,7 +1471,7 @@ function hVacation(){
 
   // Kein Urlaub geplant: nächster Feiertag als Ersatz
   const h=nextHoliday();
-  return `<button type="button" class="h-vac" id="openBulkBtn"><span class="h-vac-n${h?"":" none"}">${h?`${h.days}<small> ${unit(h.days)}</small>`:"–"}</span><span class="h-vac-t"><b>${h?`bis ${escapeHtml(bridgeName(h.name))}`:"Kein Urlaub eingetragen"}</b><span>Urlaub eintragen ›</span></span>${restHTML}</button>`;
+  return `<button type="button" class="h-vac" data-sheet="vacation"><span class="h-vac-n${h?"":" none"}">${h?`${h.days}<small> ${unit(h.days)}</small>`:"–"}</span><span class="h-vac-t"><b>${h?`bis ${escapeHtml(bridgeName(h.name))}`:"Kein Urlaub eingetragen"}</b><span>Urlaub & Gelegenheiten ›</span></span>${restHTML}</button>`;
 }
 
 /* ── V37 Brückentag-Finder ──
@@ -1766,21 +1766,23 @@ function sheetBridges(){
     .filter(o=>o.vacFrom>todayK&&Number(o.vacFrom.slice(0,4))<=y+1)
     .sort((a,b)=>a.vacFrom<b.vacFrom?-1:1);
   const hidden=state.settings.dismissedBridgeTips||[];
+  const allOn=homeOpt("bridge");
   let lastY="";
   const rows=opts.map(o=>{
     const oy=o.vacFrom.slice(0,4);
     const head=oy!==lastY?`<div class="gb-year">${oy}</div>`:"";lastY=oy;
     const off=hidden.includes(o.id);
-    return `${head}<div class="gb-row${off?" off":""}">
+    return `${head}<div class="gb-row${off||!allOn?" off":""}">
       <button type="button" class="gb-main" data-sheet-bridge="${bridgeAttr(o)}">
         <span class="h-bridge-ratio"><b>${o.total}</b><small>Tage frei</small></span>
         <span class="h-bridge-txt"><b>${escapeHtml(o.names.map(bridgeName).join(" + "))}</b><span>für <strong>${o.vac} Urlaubstag${o.vac===1?"":"e"}</strong>: ${bridgeDate(o.vacFrom)}${o.vac>1?`–${bridgeDate(o.vacTo)}`:""}</span></span>
       </button>
-      <button type="button" class="gb-toggle" data-sheet-bridge-toggle="${o.id}" data-from="${o.from}" data-to="${o.to}" role="switch" aria-checked="${!off}" aria-label="Auf Startseite zeigen"><i></i><small>Start</small></button>
+      <button type="button" class="gb-pill${off?"":" on"}" data-sheet-bridge-toggle="${o.id}" aria-pressed="${!off}" aria-label="Auf Startseite zeigen">${off?"Aus":"✓ Start"}</button>
     </div>`;
   }).join("");
   openSheet(`<h3>Gute Gelegenheiten</h3>
-    <p>Wenige Urlaubstage, viele freie Tage am Stück. Zeile antippen = im Kalender zeigen · Schalter = Tipp auf der Startseite.</p>
+    <button type="button" class="gb-master${allOn?" on":""}" data-sheet-bridge-all aria-pressed="${allOn}"><span>Tipps auf der Startseite</span><b>${allOn?"An":"Aus"}</b></button>
+    <p>Zeile antippen = im Kalender zeigen · rechts einzeln ein-/ausblenden.</p>
     <div class="gb-list">${rows||"<p>Keine Gelegenheiten gefunden.</p>"}</div>`);
 }
 const HOME_SHEETS={day:sheetDay,pause:sheetPause,konto:sheetKonto,vacation:sheetVacation,bridges:sheetBridges};
@@ -2390,7 +2392,14 @@ function renderYear(){
   const vacationPct=ent?clamp(used/ent*100,0,100):0;
   const holidays=holidaysForYear(year);
 
-  const months=Array.from({length:12},(_,m)=>yearMonthCalendar(year,m)).join("");
+  let months=Array.from({length:12},(_,m)=>yearMonthCalendar(year,m)).join("");
+  if(bridgeFocus&&!monthSelectMode){
+    const ty=Number(bridgeFocus.to.slice(0,4)),tm=Number(bridgeFocus.to.slice(5,7))-1;
+    const fy=Number(bridgeFocus.from.slice(0,4)),fm=Number(bridgeFocus.from.slice(5,7))-1;
+    const other=(y,m)=>yearMonthCalendar(y,m).replace('class="year-month-card','class="year-month-card next-year').replace(/(<div class="year-month-title">\s*<span>)([^<]+)/,`$1$2 ${y}`);
+    if(ty>year) for(let m=0;m<=tm;m++) months+=other(ty,m);
+    if(fy<year) months=Array.from({length:12-fm},(_,i)=>other(fy,fm+i)).join("")+months;
+  }
 
   const holidayList=state.settings.autoHolidaysBW
     ? `<section class="holiday-list card">
@@ -2733,8 +2742,7 @@ function bindDynamic(){
     const id=el.dataset.bridgeDismiss,from=el.dataset.from,to=el.dataset.to;
     const list=state.settings.dismissedBridgeTips||[];
     // alle Varianten, die sich mit diesem freien Zeitraum überschneiden, mit ausblenden
-    const group=bridgeGroupIds(from,to);
-    const added=[...new Set([id,...group])].filter(x=>!list.includes(x));
+    const added=[id].filter(x=>!list.includes(x));
     list.push(...added);
     state.settings.dismissedBridgeTips=list.slice(-40);
     save();render();
@@ -3929,11 +3937,14 @@ $("sheetLayer").addEventListener("click",e=>{
   if(b.dataset.sheetOpen){HOME_SHEETS[b.dataset.sheetOpen]?.();return;}
   if(b.dataset.sheetBridge){closeSheet();try{showBridge(JSON.parse(decodeURIComponent(b.dataset.sheetBridge)));}catch{}return;}
   if(b.dataset.sheetBridgeToggle){
-    const ids=[...new Set([b.dataset.sheetBridgeToggle,...bridgeGroupIds(b.dataset.from,b.dataset.to)])];
+    const id=b.dataset.sheetBridgeToggle;
     let list=state.settings.dismissedBridgeTips||[];
-    const off=list.includes(b.dataset.sheetBridgeToggle);
-    list=off?list.filter(x=>!ids.includes(x)):[...list,...ids.filter(x=>!list.includes(x))];
+    list=list.includes(id)?list.filter(x=>x!==id):[...list,id];
     state.settings.dismissedBridgeTips=list.slice(-80);
+    save();render();sheetBridges();return;
+  }
+  if(b.hasAttribute("data-sheet-bridge-all")){
+    state.settings.home={...(state.settings.home||{}),bridge:!homeOpt("bridge")};
     save();render();sheetBridges();return;
   }
   if(b.dataset.sheetYear){closeSheet();currentView="year";yearCursor=Number(b.dataset.sheetYear);bridgeFocus=null;updateNav();render();window.scrollTo(0,0);return;}

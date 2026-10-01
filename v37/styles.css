@@ -2855,3 +2855,12 @@ button:disabled{cursor:default;opacity:.5}
 .gb-toggle[aria-checked="true"] i::after{left:19px;background:#18210a}
 .gb-toggle small{font-size:11px}
 .h-week-fr{justify-content:flex-start;gap:8px;padding:8px 4px 4px}
+.gb-row{grid-template-columns:minmax(0,1fr) auto}
+.gb-pill{min-width:76px;height:36px;border-radius:18px;border:1px solid var(--line);background:none;color:var(--muted);font:600 var(--fs-s)/1 var(--font-ui);padding:0 10px}
+.gb-pill.on{border-color:rgba(182,226,76,.5);color:var(--lime);background:rgba(182,226,76,.08)}
+.gb-master{display:flex;justify-content:space-between;align-items:center;width:100%;min-height:48px;padding:0 14px;border-radius:12px;border:1px solid var(--line);background:var(--panel2);color:var(--text);font:600 var(--fs-m)/1 var(--font-ui)}
+.gb-master b{padding:6px 12px;border-radius:999px;background:var(--panel);color:var(--muted);font-size:var(--fs-s)}
+.gb-master.on b{background:var(--lime);color:#18210a}
+.year-month-card.next-year{border-style:dashed!important}
+.gb-main .h-bridge-txt span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gb-pill{min-width:68px;padding:0 8px}
