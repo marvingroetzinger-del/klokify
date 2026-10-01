@@ -1879,80 +1879,84 @@ function weekPauseLabel(rec,c){
 
 function renderWeek(){
   const monday=mondayForSelected(weekOffset);
-  const days=Array.from({length:7},(_,i)=>{
-    const x=new Date(monday);
-    x.setDate(monday.getDate()+i);
-    return x;
+  const days=Array.from({length:7},(_,i)=>{const x=new Date(monday);x.setDate(monday.getDate()+i);return x;});
+  const todayK=localDateKey(new Date());
+  const nowMin=minutesFromTime(nowTime());
+  const isCurrentWeek=localDateKey(monday)===localDateKey(mondayOfDate(new Date()));
+  const sunday=days[6];
+
+  // Gemeinsame Zeitachse für alle Tage, damit die Balken untereinander vergleichbar sind
+  let axA=6*60,axB=16*60;
+  days.forEach(d=>{
+    const r=state.records[localDateKey(d)];
+    const a=minutesFromTime(r?.start),e=minutesFromTime(r?.end)??(localDateKey(d)===todayK?nowMin:null);
+    if(a!==null) axA=Math.min(axA,Math.floor(a/60)*60);
+    if(e!==null) axB=Math.max(axB,Math.ceil(e/60)*60);
   });
+  const pct=m=>clamp((m-axA)/(axB-axA)*100,0,100);
 
-  let worked=0,target=0,balance=0;
-  const todayKey=localDateKey(new Date());
+  let worked=0,target=0;
+  const f=isCurrentWeek?fridayForecast():{mode:"hidden"};
+  const plan=isCurrentWeek?activeWeekPlan():null;
 
-  const rows=days.map(d=>{
-    const k=localDateKey(d);
-    const status=effectiveStatus(k);
-    const rec=state.records[k];
-    const live=k===todayKey;
-    const c=recordCalc(k,live);
+  const rows=days.map((d,i)=>{
+    const k=localDateKey(d),status=effectiveStatus(k),rec=state.records[k];
+    const isToday=k===todayK,c=recordCalc(k,isToday);
+    const t=targetForDate(k);
+    target+=status==="off"?0:c.target;
+    const workRow=status==="work"&&rec&&(rec.start||isManualWorkRecord(rec));
+    if(recordIsCreditedStatus(status)||workRow) worked+=c.worked;
+    if(i>=5&&!rec&&status==="empty"&&t===0) return ""; // Wochenende ohne Eintrag ausblenden
 
-    // Wochenziel bleibt die komplette Sollwoche.
-    target+=c.target;
-
-    // Ist: nur tatsächlich erfasste/angerechnete Zeit.
-    if(recordIsCreditedStatus(status)) worked+=c.worked;
-    else if(status==="work" && (rec?.start || isManualWorkRecord(rec))) worked+=c.worked;
-
-    // Saldo folgt derselben Logik wie Homescreen:
-    // abgeschlossene Tage vollständig, heute erst positives Plus.
-    balance+=dayBalanceForSummary(k,true);
-
-    const label=status==="empty"?"Kein Eintrag":STATUS[status].label;
-    const manualWork=status==="work" && isManualWorkRecord(rec);
-    const workRow=status==="work" && (rec?.start || manualWork);
-    const endDisplay=rec?.end || (live?nowTime():"…");
-    const workedLabel=workRow?formatCompact(c.worked):formatCompact(c.target);
-
-    return `<article class="week-item card" data-select-day="${k}">
-      <div class="week-date">
-        <strong>${weekdayName(d)}</strong>
-        <span>${pad(d.getDate())}.${pad(d.getMonth()+1)}</span>
-      </div>
-
-      <div class="week-mid">
-        <div class="mini-row">
-          <span>${label}</span>
-          <span>${workedLabel}</span>
-        </div>
-
-        ${workRow?`
-          ${manualWork?`
-            <div class="week-time-meta manual">
-              <span>Sammelbuchung</span>
-              <span>${formatCompact(c.worked)} Arbeit</span>
-            </div>
-          `:`
-            <div class="week-time-meta">
-              <span>${rec.start}–${endDisplay}</span>
-              <span>${weekPauseLabel(rec,c)}</span>
-            </div>
-            ${weekTimelineHTML(rec,k)}
-          `}
-        `:`
-          <div class="week-status-line ${status}"></div>
-        `}
-      </div>
-
-      <div class="week-right">
-        <div class="week-balance ${c.balance>=0?"positive":"negative"}">
-          ${status==="work"&&(rec?.end||manualWork)?formatSignedHours(c.balance):status==="work"&&live&&rec?.start&&c.balance>0?formatSignedHours(c.balance):"—"}
-        </div>
-        <button type="button" class="week-edit-btn" data-edit-week-day="${k}" aria-label="${weekdayName(d,false)} bearbeiten">✎</button>
-      </div>
-    </article>`;
+    let bar="",line="",right="",cls="";
+    if(workRow&&!isManualWorkRecord(rec)){
+      const a=minutesFromTime(rec.start);
+      const e=minutesFromTime(rec.end)??(isToday?nowMin:a);
+      const pz=pauseTimeDetails(rec,k).filter(p=>p.type==="timed").map(p=>{
+        const pa=minutesFromTime(p.start),pb=p.end?minutesFromTime(p.end):(p.running&&isToday?nowMin:null);
+        return pb!==null&&pb>pa?`<i class="wp${!p.end?" run":""}" style="left:${pct(pa)}%;width:${Math.max(1,pct(pb)-pct(pa))}%"></i>`:"";
+      }).join("");
+      bar=`<div class="w-bar"><i class="wf${!rec.end&&isToday?" live":""}" style="left:${pct(a)}%;width:${Math.max(1,pct(e)-pct(a))}%"></i>${pz}</div>`;
+      line=`${rec.start}–${rec.end||(isToday?"läuft":"offen")}${c.breakMin?` · ${Math.round(c.breakMin)} Min Pause`:""}`;
+      const counts=!!rec.end||(isToday&&c.balance>=0);
+      right=`<b>${hDur(c.worked)}</b><small class="${counts?(c.balance>=0?"pos":"neg"):""}">${counts?hSigned(c.balance):isToday?"läuft":"Ende fehlt"}</small>`;
+      if(!rec.end&&!isToday) cls=" warn";
+    }else if(workRow){
+      line="Sammelbuchung";
+      right=`<b>${hDur(c.worked)}</b><small class="${c.balance>=0?"pos":"neg"}">${hSigned(c.balance)}</small>`;
+    }else if(status!=="empty"&&status!=="work"){
+      line=`<span class="w-typed ${status}">${status==="holiday"&&bwHolidayName(k)?escapeHtml(bwHolidayName(k)):STATUS[status].label}</span>`;
+      right=c.target?`<b>${hDur(c.worked)}</b><small>gutgeschrieben</small>`:`<b>–</b>`;
+    }else if(i===4&&isCurrentWeek&&k>todayK&&(plan||f.mode==="forecast")){
+      line=`<span class="w-fc">${plan?`Plan: bis ${plan.fridayEnd}`:`Prognose: bis ${timeFromMinutes(f.projectedEnd)}`}</span>`;
+      right=`<b class="muted">${plan?hDur(t):hDur(f.requiredFriday)}</b><small>${plan?"Soll":"nötig"}</small>`;
+      cls=" future";
+    }else if(k<todayK&&t>0){
+      line=`<span class="w-missing">kein Eintrag</span>`;
+      right=`<b class="muted">–</b><small>Soll ${hDur(t)}</small>`;
+      cls=" missing";
+    }else{
+      line=t?"":"frei";
+      right=t?`<b class="muted">${hDur(t)}</b><small>Soll</small>`:`<b class="muted">–</b>`;
+      cls=" future";
+    }
+    return `<div class="w-row${isToday?" today":""}${cls}">
+      <button type="button" class="w-main" data-select-day="${k}" aria-label="${weekdayName(d,false)} anzeigen">
+        <span class="w-day"><b>${weekdayName(d)}</b><small>${pad(d.getDate())}.${pad(d.getMonth()+1)}.</small></span>
+        <span class="w-mid">${bar}<span class="w-line">${line}</span></span>
+        <span class="w-right">${right}</span>
+      </button>
+      <button type="button" class="w-edit" data-edit-week-day="${k}" aria-label="${weekdayName(d,false)} bearbeiten">${H_ICON.edit}</button>
+    </div>`;
   }).join("");
 
-  const currentMonday=mondayOfDate(new Date());
-  const isCurrentWeek=localDateKey(monday)===localDateKey(currentMonday);
+  const bal=isCurrentWeek?currentWeekBalance():dateRangeBalance(monday,sunday,false);
+  const todayPart=isCurrentWeek&&state.records[todayK]&&effectiveStatus(todayK)==="work"?dayBalanceForSummary(todayK,true):0;
+  const balSub=isCurrentWeek?(todayPart!==0?"inkl. heute":"bis gestern"):"abgeschlossen";
+  const open=Math.max(0,target-worked);
+  const wp=target?clamp(worked/target*100,0,100):0;
+  const ticks=Array.from({length:Math.floor((axB-axA)/60)+1},(_,j)=>axA+j*60).filter((m,j,arr)=>j%2===0||arr.length<=6)
+    .map(m=>`<span style="left:${pct(m)}%">${Math.floor(m/60)}</span>`).join("");
 
   return `
     <div class="calendar-head">
@@ -1968,16 +1972,23 @@ function renderWeek(){
       <button class="month-secondary${isCurrentWeek?" is-current":""}" id="thisWeekBtn" ${isCurrentWeek?"disabled":""}>${isCurrentWeek?"Aktuelle Woche ✓":"Aktuelle Woche"}</button>
     </section>
 
-    <section class="summary-grid">
-      <article class="summary-card card"><span>Ist</span><strong>${formatHours(worked)}</strong></article>
-      <article class="summary-card card"><span>Wochenziel</span><strong>${formatHours(target)}</strong></article>
-      <article class="summary-card card"><span>Saldo</span><strong class="${balance>=0?"positive":"negative"}">${formatSignedHours(balance)}</strong></article>
+    <section class="h-hero w-sum">
+      <div class="h-c">
+        <div class="h-c-big"><span>Saldo Woche</span><b class="${bal>=0?"":"neg"}">${hSigned(bal)}<small> h</small></b><span>${balSub}</span></div>
+        <div class="h-c-rows">
+          <div class="h-c-row"><span>Arbeit</span><div class="val">${hDur(worked)}<em>von ${hDur(target)}</em></div><div class="h-bar"><i class="lime" style="width:${wp}%"></i></div></div>
+          <div class="h-c-row"><span>${isCurrentWeek||monday>new Date()?"Offen":"Fehlt"}</span><div class="val">${hDur(open)}<em>${isCurrentWeek&&f.mode==="forecast"?`Fr ${timeFromMinutes(f.projectedEnd)}`:"h"}</em></div></div>
+        </div>
+      </div>
     </section>
 
-    <section class="week-list">${rows}</section>
+    <section class="w-list">
+      <div class="w-axis"><span class="w-axis-in">${ticks}</span></div>
+      ${rows}
+    </section>
+    <p class="w-note">Zeile antippen = Tag anzeigen · Stift = bearbeiten · Balken auf gemeinsamer Zeitachse ${Math.floor(axA/60)}–${Math.floor(axB/60)} Uhr</p>
   `;
 }
-
 function monthStats(year,month){
   const last=new Date(year,month+1,0).getDate();
   const todayKey=localDateKey(new Date());
