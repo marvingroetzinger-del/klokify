@@ -38,7 +38,7 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;paddin
 button:focus-visible{outline:2px solid var(--lime);outline-offset:2px}
 .num{font-family:var(--font-num);font-variant-numeric:tabular-nums}
 
-.app{max-width:480px;margin:0 auto;padding-inline:16px;padding-block:12px calc(96px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:12px}
+.app{max-width:480px;margin:0 auto;padding-inline:16px;padding-block:8px calc(84px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:10px}
 
 /* Kopf */
 .top{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px}
@@ -50,7 +50,7 @@ button:focus-visible{outline:2px solid var(--lime);outline-offset:2px}
 .icon-btn svg{width:22px;height:22px}
 
 /* Hauptkarte */
-.hero{background:var(--surface);border-radius:20px;padding:18px 18px 16px;display:flex;flex-direction:column;gap:14px}
+.hero{background:var(--surface);border-radius:20px;padding:14px 14px 12px;display:flex;flex-direction:column;gap:12px}
 .hero-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
 .kicker{font-size:var(--fs-s);font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 .chip{font-size:var(--fs-s);font-weight:600;padding:4px 10px;border-radius:999px;background:var(--surface-2);color:var(--muted);white-space:nowrap}
@@ -90,7 +90,7 @@ button:focus-visible{outline:2px solid var(--lime);outline-offset:2px}
 
 /* Aktionen */
 .actions{display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px}
-.btn{min-height:64px;border-radius:var(--r);background:var(--surface);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:var(--fs-s);font-weight:600;color:var(--text)}
+.btn{min-height:58px;border-radius:var(--r);background:var(--surface);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:var(--fs-s);font-weight:600;color:var(--text)}
 .btn svg{width:22px;height:22px}
 .btn.primary{background:var(--lime);color:var(--on-lime);flex-direction:row;gap:10px;font-size:var(--fs-l);font-weight:700}
 .btn.primary.wide{width:100%}
@@ -102,11 +102,52 @@ button:focus-visible{outline:2px solid var(--lime);outline-offset:2px}
 .btn:disabled{opacity:.4;cursor:default}
 
 /* Hinweis */
-.hint{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:12px;background:var(--surface);font-size:var(--fs-m);color:var(--muted)}
+.hint{display:flex;gap:10px;align-items:flex-start;padding:10px 14px;border-radius:12px;background:var(--surface);font-size:var(--fs-m);color:var(--muted)}
 .hint b{color:var(--text)}
 .hint i{flex:none;width:8px;height:8px;border-radius:50%;margin-top:7px;background:var(--blue)}
 .hint.warn i{background:var(--amber)}
 .hint.alert i{background:var(--red)}
+
+/* Kennzahlen im Tagesbereich */
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.stat{background:var(--surface-2);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.stat span{font-size:var(--fs-s);color:var(--muted);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stat b{font-family:var(--font-num);font-size:var(--fs-xl);font-weight:700;line-height:1.05;white-space:nowrap}
+.stat b small{font-size:var(--fs-m);color:var(--muted);font-weight:600}
+.stat em{font-style:normal;font-size:var(--fs-s);color:var(--muted)}
+.stat.key b{color:var(--lime)}
+.stat.pzs b{color:var(--amber)}
+.tl-ends .end b{color:var(--lime);font-size:var(--fs-xl);font-weight:700}
+.tl-ends{align-items:flex-end}
+
+/* Wochenübersicht */
+.week{background:var(--surface);border-radius:20px;padding:12px 12px 8px;display:flex;flex-direction:column;gap:6px;text-align:left;width:100%}
+.week-head{display:flex;justify-content:space-between;align-items:baseline}
+.week-head b{font-family:var(--font-num);font-size:var(--fs-l)}
+.week-head small{color:var(--muted);font-size:var(--fs-s);margin-left:6px;font-weight:500}
+.days{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.day{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 2px;border-radius:12px;min-width:0}
+.day.today{background:var(--surface-2)}
+.day .dn{font-size:var(--fs-s);font-weight:600;color:var(--muted)}
+.day.today .dn{color:var(--text)}
+.day .bar{width:10px;height:30px;border-radius:5px;background:var(--surface-2);position:relative;overflow:hidden}
+.day.today .bar{background:var(--bg)}
+.day .bar i{position:absolute;left:0;right:0;bottom:0;background:var(--lime);border-radius:5px}
+.day.fc .bar{background:none;border:2px dashed var(--line)}
+.day .dh{font-family:var(--font-num);font-size:var(--fs-l);font-weight:600}
+.day .db{font-size:var(--fs-s);font-weight:600;font-family:var(--font-num)}
+.day.fc{border:1.5px dashed var(--line)}
+.day.fc .dh{color:var(--text)}
+.day.fc .db{color:var(--muted)}
+
+/* Urlaubsleiste */
+.vacbar{background:var(--surface);border-radius:var(--r);padding:10px 14px;display:flex;align-items:center;gap:12px;text-align:left;width:100%}
+.vacbar .vd{font-family:var(--font-num);font-size:var(--fs-xl);font-weight:700;color:var(--blue);line-height:1}
+.vacbar .vd small{font-size:var(--fs-m);font-weight:600}
+.vacbar .vt{display:flex;flex-direction:column;min-width:0;flex:1}
+.vacbar .vt span{font-size:var(--fs-s);color:var(--muted)}
+.vacbar .vr{font-size:var(--fs-s);color:var(--muted);text-align:right}
+.vacbar .vr b{display:block;color:var(--text);font-family:var(--font-num);font-size:var(--fs-l)}
 
 /* Infoleiste */
 .strip{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
@@ -258,7 +299,7 @@ function timelineHTML(c){
   const now=S.end?"":`<i class="now" style="left:${pct(c.now)}%"></i>`;
   return `
   <div>
-    <div class="tl-ends"><span>Beginn<b>${hhmm(start)}</b></span><span class="right">${S.end?"Ende":c.balance>=0?"Soll":"Feierabend"}<b>${hhmm(S.end??c.plannedEnd)}</b></span></div>
+    <div class="tl-ends"><span>Beginn<b>${hhmm(start)}</b></span><span class="right end">${S.end?"Ende":c.balance>=0?"Soll erreicht":"Feierabend"}<b>${hhmm(S.end??c.plannedEnd)}</b></span></div>
     <div class="track" role="img" aria-label="Arbeitstag von ${hhmm(start)} bis ${hhmm(axisEnd)}">
       <div class="track-clip">
         <div class="fill" style="width:${pct(c.ref)}%"></div>
@@ -272,26 +313,24 @@ function timelineHTML(c){
 }
 
 function heroHTML(c){
-  let kicker="Feierabend um",main=hhmm(c.plannedEnd),sub=`noch ${dur(c.remaining)} h`,chip='<span class="chip run">läuft</span>',cls="";
+  let chip='<span class="chip run">läuft</span>',kicker="Heute";
+  let key=`<div class="stat key"><span>Noch</span><b>${dur(c.remaining)}<small> h</small></b><em>bis Feierabend</em></div>`;
   if(c.running) chip='<span class="chip pause">Pause läuft</span>';
   if(S.end){
-    kicker="Feierabend gemacht";main=hhmm(S.end);cls=" neutral";
-    sub=`Saldo heute <span class="${c.balance>=0?"pos":"neg"}">${signed(c.balance)}</span>`;
-    chip='<span class="chip done">erledigt</span>';
+    chip='<span class="chip done">Feierabend</span>';
+    key=`<div class="stat key"><span>Saldo heute</span><b class="${c.balance>=0?"pos":"neg"}">${signed(c.balance).replace(" h","")}<small> h</small></b><em>Ende ${hhmm(S.end)}</em></div>`;
   }else if(c.balance>=0){
-    kicker="Soll erreicht seit";main=hhmm(c.plannedEnd);
-    sub=`<span class="pos">${signed(c.balance)}</span> <span>Zeitplus</span>`;
     if(!c.running) chip='<span class="chip run">Plus läuft</span>';
+    key=`<div class="stat key"><span>Zeitplus</span><b>+${dur(c.balance)}<small> h</small></b><em>über Soll</em></div>`;
   }
   return `<section class="hero" aria-label="Heute">
     <div class="hero-head"><span class="kicker">${kicker}</span>${chip}</div>
-    <div class="hero-time${cls}">${main}</div>
-    <div class="hero-sub">${sub}</div>
-    ${timelineHTML(c)}
-    <div class="meta">
-      <span>Arbeit <b>${dur(c.worked)}</b> / ${dur(SETTINGS.target)} h</span>
-      <span class="pz-meta">Pause <b>${c.used}</b> / ${c.projPause} Min</span>
+    <div class="stats">
+      ${key}
+      <div class="stat"><span>Arbeit</span><b>${dur(c.worked)}<small> h</small></b><em>von ${dur(SETTINGS.target)} h</em></div>
+      <div class="stat pzs"><span>Pause</span><b>${c.used}<small> Min</small></b><em>${c.running?"läuft":`von ${c.projPause} Min`}</em></div>
     </div>
+    ${timelineHTML(c)}
   </section>`;
 }
 
@@ -320,18 +359,34 @@ function hintHTML(c){
   if(c.worked>=360&&c.used<30) return `<div class="hint warn"><i></i><span><b>Pause fehlt:</b> ab 6 h Arbeit sind 30 Min vorgeschrieben, bisher ${c.used} Min.</span></div>`;
   if(c.balance>=0){
     const left=c.latest-c.now;
-    return `<div class="hint${left<=30?" alert":""}"><i></i><span>Höchstgrenze 10 h: spätestens <b>${hhmm(c.latest)}</b> gehen.</span></div>`;
+    return `<div class="hint${left<=30?" alert":""}"><i></i><span>10-h-Grenze: spätestens <b>${hhmm(c.latest)}</b> gehen</span></div>`;
   }
   return "";
 }
 
-function stripHTML(c){
-  const wk=c.week;
-  return `<section class="strip" aria-label="Überblick">
-    <button class="tile" data-sheet="week"><span>Woche</span><b class="${wk>=0?"pos":"neg"}">${signed(wk).replace(" h","")}</b><small>${c.todayPart>0?"inkl. heute":"bis gestern"}</small></button>
-    <button class="tile" data-sheet="friday"><span>Freitag ab</span><b>${hhmm(c.friEnd)}</b><small>${dur(c.friNeed)} h nötig</small></button>
-    <button class="tile" data-sheet="vacation"><span>Urlaub in</span><b class="vac">${VACATION.days}<em class="unit"> Tage</em></b><small>ab ${VACATION.from}</small></button>
-  </section>`;
+function weekHTML(c){
+  const rows=[...WEEK_PAST.map(x=>({dn:x.d.slice(0,2),worked:SETTINGS.target+x.bal,bal:x.bal}))];
+  const todayStarted=S.start!=null;
+  rows.push({dn:"Do",worked:c.worked,bal:S.end?c.balance:(c.balance>=0?c.balance:null),today:true,started:todayStarted});
+  rows.push({dn:"Fr",fc:true,end:c.friEnd,need:c.friNeed});
+  const max=600;
+  const cells=rows.map(r=>{
+    if(r.fc) return `<div class="day fc"><span class="dn">Fr</span><span class="dh">${hhmm(r.end)}</span><span class="db">Prognose</span></div>`;
+    const h=clamp(r.worked/max*100,0,100);
+    const bal=r.bal==null?`<span class="db" style="color:var(--muted)">${r.started?"läuft":"–"}</span>`:`<span class="db ${r.bal>=0?"pos":"neg"}">${signed(r.bal).replace(" h","")}</span>`;
+    return `<div class="day${r.today?" today":""}"><span class="dn">${r.dn}</span><span class="dh">${r.today&&!r.started?"–":dur(r.worked)}</span>${bal}</div>`;
+  }).join("");
+  return `<button class="week" data-sheet="week" aria-label="Woche anzeigen">
+    <div class="week-head"><span class="kicker">Woche 40</span><span><b class="${c.week>=0?"pos":"neg"}">${signed(c.week)}</b><small>${c.todayPart>0?"inkl. heute":"bis gestern"}</small></span></div>
+    <div class="days">${cells}</div>
+  </button>`;
+}
+function vacHTML(){
+  return `<button class="vacbar" data-sheet="vacation">
+    <span class="vd">${VACATION.days}<small> Tage</small></span>
+    <span class="vt"><b>bis zum Urlaub</b><span>${VACATION.from} – ${VACATION.to}</span></span>
+    <span class="vr">Rest<b>${VACATION.rest} / ${VACATION.ent}</b></span>
+  </button>`;
 }
 
 function render(){
@@ -343,7 +398,7 @@ function render(){
       <div class="top-right"><span class="top-clock num">${hhmm(S.now)}</span><button class="icon-btn" id="settings" aria-label="Einstellungen">${ICON.gear}</button></div>
     </header>
     ${S.start==null?startHTML(c):heroHTML(c)+actionsHTML(c)+hintHTML(c)}
-    ${stripHTML(c)}`;
+    ${weekHTML(c)}${vacHTML()}`;
   updatePixel();
 }
 
@@ -363,7 +418,8 @@ function sheetWeek(){
       <div class="row"><span>Do 01.10. ${S.end?"":"(läuft)"}</span><b>${S.start==null?"–":S.end?signed(c.balance):c.balance>=0?signed(c.balance):"zählt ab Soll"}</b></div>
       <div class="row total"><span>Woche gesamt</span><b>${signed(c.week)}</b></div>
     </div>
-    <p>Der laufende Tag zählt erst, wenn das Soll erreicht ist. So steht morgens kein künstliches Minus.</p>`);
+    <p>Der laufende Tag zählt erst, wenn das Soll erreicht ist. So steht morgens kein künstliches Minus.</p>
+    <button class="btn ghost" data-sheet="friday">Freitag: ab ${hhmm(c.friEnd)} · Details</button>`);
 }
 function sheetFriday(){
   const c=calc();
