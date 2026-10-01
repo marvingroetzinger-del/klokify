@@ -2562,3 +2562,28 @@ button:disabled{cursor:default;opacity:.5}
 .h-tip{padding:4px 4px 4px 4px;gap:0}
 .h-tip-body{flex:1;min-width:0;display:flex;align-items:center;gap:12px;padding:8px 6px 8px 8px;border:0;background:none;color:var(--text);text-align:left}
 .h-tip-main em{font-style:normal;font-size:var(--fs-s);color:var(--lime)}
+
+/* V37 Kennzahlen Variante C */
+.h-c{display:grid;grid-template-columns:auto minmax(0,1fr);gap:16px;align-items:center}
+.h-c-big{display:flex;flex-direction:column;padding-right:16px;border-right:1px solid var(--line)}
+.h-c-big span{font-size:var(--fs-s);color:var(--muted)}
+.h-c-big b{font:700 44px/1 var(--font-num);color:var(--lime);font-variant-numeric:tabular-nums;white-space:nowrap}
+.h-c-big b.neg{color:var(--danger)}
+.h-c-big b small{font-size:var(--fs-l)}
+.h-c-rows{display:flex;flex-direction:column;gap:10px;min-width:0}
+.h-c-row{display:grid;grid-template-columns:48px minmax(0,1fr);column-gap:8px;row-gap:4px;align-items:center}
+.h-c-row>span{font-size:var(--fs-s);color:var(--muted);grid-row:span 2}
+.h-c-row .val{font:600 var(--fs-m)/1 var(--font-num);font-variant-numeric:tabular-nums;display:flex;justify-content:space-between;gap:6px;white-space:nowrap}
+.h-c-row .val.pz{color:var(--orange)}
+.h-c-row .val em{font-style:normal;color:var(--muted);font-weight:500}
+.h-bar{height:8px;border-radius:4px;background:var(--bg);overflow:hidden}
+.h-bar i{display:block;height:100%;border-radius:4px}
+.h-bar i.lime{background:var(--lime)}
+.h-bar i.or{background:var(--orange)}
+.h-bar i.or.run{background:repeating-linear-gradient(135deg,var(--orange) 0 5px,#c9852b 5px 10px)}
+.h-c{gap:12px}
+.h-c-big{padding-right:12px}
+.h-c-big b{font-size:40px}
+.h-c-big b small{font-size:var(--fs-m)}
+.h-c-row{grid-template-columns:44px minmax(0,1fr)}
+.h-c-row .val em{overflow:hidden;text-overflow:ellipsis;font-size:var(--fs-s)}

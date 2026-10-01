@@ -1636,30 +1636,35 @@ function renderDay(){
   const pauseActive=!!activePause(rec);
   const now=minutesFromTime(nowTime());
   let chip=`<span class="h-chip run">läuft</span>`;
-  let keyStat=`<div class="h-stat key"><span>Noch</span><b>${hDur(Math.max(0,c.plannedEnd-now))}<small> h</small></b><em>verbleibend</em></div>`;
+  // V37 Variante C: Restzeit groß links, Arbeit und Pause als Fortschrittsbalken rechts
+  let big={lbl:"Noch",val:hDur(Math.max(0,c.plannedEnd-now)),unit:" h",sub:`bis ${timeFromMinutes(c.plannedEnd)}`,cls:""};
   if(pauseActive) chip=`<span class="h-chip pause">Pause läuft</span>`;
   if(rec.end){
     chip=`<span class="h-chip done">Feierabend</span>`;
-    keyStat=`<div class="h-stat key"><span>Saldo</span><b class="${c.balance>=0?"pos":"neg"}">${hSigned(c.balance)}<small> h</small></b><em>Ende ${rec.end}</em></div>`;
+    big={lbl:"Saldo",val:hSigned(c.balance),unit:" h",sub:`Ende ${rec.end}`,cls:c.balance>=0?"":"neg"};
   }else if(!isToday){
     chip=`<span class="h-chip warn">Ende fehlt</span>`;
-    keyStat=`<div class="h-stat key"><span>Ende</span><b class="neg">fehlt</b><em>bitte nachtragen</em></div>`;
+    big={lbl:"Ende",val:"fehlt",unit:"",sub:"bitte nachtragen",cls:"neg"};
   }else if(c.balance>=0){
     if(!pauseActive) chip=`<span class="h-chip run">Plus läuft</span>`;
-    keyStat=`<div class="h-stat key"><span>Zeitplus</span><b>+${hDur(c.balance)}<small> h</small></b><em>über Soll</em></div>`;
+    big={lbl:"Zeitplus",val:`+${hDur(c.balance)}`,unit:" h",sub:"über Soll",cls:""};
   }
   const ap=activePause(rec);
   const pauseShown=Math.round(c.hasActualPause?c.breakMin:0);
-  const pausePlan=Math.round(c.projectedPauseMin||0);
-  const pauseEm=ap&&isToday?`seit ${ap.start}`:`von ${pausePlan} Min`;
+  const pausePlan=Math.max(1,Math.round(c.projectedPauseMin||0));
+  const pauseRunning=!!(ap&&isToday);
+  const workPct=c.target?clamp(c.worked/c.target*100,0,100):0;
+  const pausePct=clamp(pauseShown/pausePlan*100,0,100);
   const done=!isToday||!!rec.end;
 
   return `${openPastDayHTML()}<section class="h-hero" aria-label="Tag">
     <div class="h-hero-head"><span class="h-kicker">${isToday?"Heute":weekdayName(dateFromKey(key),false)}</span>${chip}</div>
-    <div class="h-stats">
-      ${keyStat}
-      <div class="h-stat"><span>Arbeit</span><b>${hDur(c.worked)}<small> h</small></b><em>von ${hDur(c.target)} h</em></div>
-      <div class="h-stat pzs"><span>Pause</span><b>${pauseShown}<small> Min</small></b><em>${pauseEm}</em></div>
+    <div class="h-c">
+      <div class="h-c-big"><span>${big.lbl}</span><b class="${big.cls}">${big.val}<small>${big.unit}</small></b><span>${big.sub}</span></div>
+      <div class="h-c-rows">
+        <div class="h-c-row"><span>Arbeit</span><div class="val">${hDur(c.worked)} h<em>von ${hDur(c.target)}</em></div><div class="h-bar"><i class="lime" style="width:${workPct}%"></i></div></div>
+        <div class="h-c-row"><span>Pause</span><div class="val pz">${pauseShown} Min<em>${pauseRunning?`seit ${ap.start}`:`von ${pausePlan}`}</em></div><div class="h-bar"><i class="or${pauseRunning?" run":""}" style="width:${pausePct}%"></i></div></div>
+      </div>
     </div>
     ${hTimeline(rec,c,key)}
   </section>

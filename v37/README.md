@@ -7,7 +7,7 @@ Woche, Monat, Jahr und Dialoge folgen in eigenen Schritten (Farben sind bereits 
 
 ## V37.0 – Neuer Homescreen
 
-- **Keine große Feierabendzeit mehr.** Oben drei gleich große Werte: Noch (bzw. Zeitplus / Saldo) · Arbeit · Pause.
+- **Keine große Feierabendzeit mehr.** Oben links groß „Noch 3:45 h · bis 15:05“ (nach Soll „Zeitplus“, nach Feierabend „Saldo“), rechts Arbeit und Pause als Fortschrittsbalken mit Wert („4:30 h von 8:00“, „15 Min von 30“). Laufende Pause schraffiert.
 - **Zeitstrahl 40 px hoch** mit Halbstunden-Strichen, Jetzt-Strich, Pausen als Blöcke mit Uhrzeit darunter (13 px). Laufende Pause schraffiert, keine Animation. Feierabendzeit steht hervorgehoben am rechten Ende, nach Erreichen des Solls „Soll erreicht“.
 - **Wochenzeile Mo–Fr** auf der Startseite: Stunden und Saldo je Tag, Freitag als Prognose bzw. Plan (antippen öffnet „Woche planen“). Tag antippen zeigt diesen Tag, Kopf antippen öffnet die Wochenansicht.
 - **Urlaubsleiste:** „18 Tage bis zum Urlaub · noch 12 Arbeitstage · ab Mo 19.10.“ Heute zählt mit, solange kein Feierabend gestempelt ist. Während des Urlaubs: „Urlaub läuft noch 2 Tage · bis Fr 23.10.“ Ohne geplanten Urlaub: Countdown bis zum nächsten Feiertag (Mo–Fr), antippen öffnet „Zeitraum eintragen“.
