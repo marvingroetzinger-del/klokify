@@ -178,7 +178,7 @@
   </dialog>
 
 
-  <dialog id="weekPlannerDialog" class="dialog week-planner-dialog">
+  <dialog id="weekPlannerDialog" class="dialog week-planner-dialog wp37">
     <form id="weekPlannerForm">
       <div class="dialog-head">
         <div>
@@ -188,40 +188,47 @@
         <button type="button" class="icon-btn mini" data-close="weekPlannerDialog" aria-label="Schließen">×</button>
       </div>
 
-      <section class="planner-goal">
-        <div class="planner-section-title">Freitag Wunsch-Feierabend</div>
-        <div class="planner-goal-grid">
-          <label>Zielzeit
+      <section class="wp-goal">
+        <div class="wp-goal-row">
+          <label>Freitag Feierabend
             <input type="time" id="plannerFridayEnd" required>
           </label>
-          <label>Pause Freitag (Min)
+          <label>Pause (Min)
             <input type="number" id="plannerFridayPause" min="0" max="180" step="5">
           </label>
         </div>
-        <div class="planner-hint" id="plannerFridayHint"></div>
+        <div class="wp-steps">
+          <button type="button" data-fr-step="-30">−30</button>
+          <button type="button" data-fr-step="-15">−15</button>
+          <button type="button" data-fr-step="15">+15</button>
+          <button type="button" data-fr-step="30">+30</button>
+        </div>
+        <div class="wp-hint" id="plannerFridayHint"></div>
       </section>
 
-      <section class="planner-special-section">
-        <div class="planner-section-title">Tage dieser Woche</div>
-        <div class="muted planner-mini-copy">Alle Arbeitstage bleiben sichtbar. Vergangene Tage zählen mit ihren Ist-Zeiten; bei offenen Tagen kannst du eine feste Endzeit eintragen.</div>
-        <div id="plannerConstraintRows" class="planner-constraints"></div>
-      </section>
+      <section id="weekPlannerPreview" class="week-planner-preview wp-preview" aria-live="polite"></section>
 
-      <label>Übrige Zeit verteilen
-        <select id="plannerDistribution">
+      <div class="wp-dist">
+        <span>Restzeit verteilen</span>
+        <div class="h-seg" role="radiogroup" aria-label="Restzeit verteilen">
+          <button type="button" data-plan-dist="even" role="radio">Gleichmäßig</button>
+          <button type="button" data-plan-dist="frontload" role="radio">Vorarbeiten</button>
+        </div>
+        <select id="plannerDistribution" hidden>
           <option value="even">Gleichmäßig verteilen</option>
           <option value="frontload">Frühestmöglich vorarbeiten</option>
         </select>
-      </label>
+      </div>
 
-      <section id="weekPlannerPreview" class="week-planner-preview" aria-live="polite"></section>
+      <section class="planner-special-section wp-fixed" id="plannerFixedSection">
+        <div class="planner-section-title">Feste Endzeit für offene Tage <small>optional</small></div>
+        <div id="plannerConstraintRows" class="planner-constraints"></div>
+      </section>
 
-      <div class="planner-dialog-actions">
-        <button type="button" class="danger-ghost" id="deleteWeekPlanBtn">Plan löschen</button>
-        <div class="planner-save-actions">
-          <button type="button" class="ghost-btn" data-close="weekPlannerDialog">Abbrechen</button>
-          <button type="submit" class="primary-small">Plan speichern</button>
-        </div>
+      <div class="planner-dialog-actions wp-actions">
+        <button type="button" class="ghost-btn" data-close="weekPlannerDialog">Abbrechen</button>
+        <button type="submit" class="primary-small">Plan speichern</button>
+        <button type="button" class="wp-delete" id="deleteWeekPlanBtn">Plan löschen</button>
       </div>
     </form>
   </dialog>

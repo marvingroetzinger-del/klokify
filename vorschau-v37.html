@@ -2804,6 +2804,36 @@ button:disabled{cursor:default;opacity:.5}
 .e-preview b{color:var(--text);font-weight:700}
 .e-preview b.pos{color:var(--lime)} .e-preview b.neg{color:var(--danger)}
 
+/* ════ V37 Woche planen ════ */
+.wp37 form{display:flex;flex-direction:column;gap:14px}
+.wp37 input{font:600 var(--fs-m)/1.2 var(--font-num)!important;min-height:48px}
+.wp-goal{display:flex;flex-direction:column;gap:8px;padding:12px;border-radius:14px;background:var(--panel2)}
+.wp-goal-row{display:grid;grid-template-columns:1.4fr 1fr;gap:8px}
+.wp-goal label{font-size:var(--fs-s);color:var(--muted);display:flex;flex-direction:column;gap:4px}
+.wp-goal input#plannerFridayEnd{font-size:var(--fs-l)!important;color:var(--lime)}
+.wp-steps{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.wp-steps button{min-height:40px;border:0;border-radius:10px;background:var(--panel);color:var(--text);font:700 var(--fs-s)/1 var(--font-num)}
+.wp-hint{font-size:var(--fs-s);color:var(--muted)}
+.wp-preview{border-radius:14px;overflow:hidden}
+.wp-preview .planner-preview-head{display:flex;justify-content:space-between;align-items:baseline;padding:10px 12px;font-size:var(--fs-s)}
+.wp-preview .planner-preview-head strong{font-size:var(--fs-m)}
+.wp-preview .planner-preview-row{display:grid;grid-template-columns:1fr auto 64px;gap:8px;padding:9px 12px;font:500 var(--fs-m)/1.2 var(--font-num)}
+.wp-preview .planner-preview-row small{font-size:var(--fs-m)!important;text-align:right}
+.wp-preview .planner-preview-row.today{background:rgba(182,226,76,.08);box-shadow:inset 3px 0 0 var(--lime)}
+.wp-preview .planner-preview-row:last-child strong{color:var(--lime)}
+.wp-dist{display:flex;flex-direction:column;gap:6px}
+.wp-dist>span{font-size:var(--fs-s);color:var(--muted)}
+.wp-dist .h-seg button[aria-checked="true"]{background:var(--panel2);color:var(--text)}
+.wp-fixed[hidden]{display:none}
+.wp-fixed .planner-section-title small{color:var(--muted);font-weight:500}
+.wp-actions{position:sticky;bottom:0;margin:0 -20px;padding:10px 20px calc(12px + env(safe-area-inset-bottom));background:var(--panel);border-top:1px solid var(--line);display:grid!important;grid-template-columns:1fr 1fr;gap:8px;z-index:2}
+.wp-delete{grid-column:1/-1;border:0;background:none;color:var(--danger);font:600 var(--fs-s)/1 var(--font-ui);padding:6px}
+.wp-delete[hidden]{display:none}
+.wp-preview .planner-preview-row{grid-template-columns:minmax(0,1fr) auto 76px}
+.wp-preview .planner-preview-row small{white-space:nowrap;font-size:var(--fs-m)!important;font-weight:700}
+.wp37 .wp-goal-row>*{min-width:0}
+.wp37 .wp-goal input{width:100%;min-width:0}
+
 </style>
 
   <div class="app-shell">
@@ -2969,7 +2999,7 @@ button:disabled{cursor:default;opacity:.5}
   </dialog>
 
 
-  <dialog id="weekPlannerDialog" class="dialog week-planner-dialog">
+  <dialog id="weekPlannerDialog" class="dialog week-planner-dialog wp37">
     <form id="weekPlannerForm">
       <div class="dialog-head">
         <div>
@@ -2979,40 +3009,47 @@ button:disabled{cursor:default;opacity:.5}
         <button type="button" class="icon-btn mini" data-close="weekPlannerDialog" aria-label="Schließen">×</button>
       </div>
 
-      <section class="planner-goal">
-        <div class="planner-section-title">Freitag Wunsch-Feierabend</div>
-        <div class="planner-goal-grid">
-          <label>Zielzeit
+      <section class="wp-goal">
+        <div class="wp-goal-row">
+          <label>Freitag Feierabend
             <input type="time" id="plannerFridayEnd" required>
           </label>
-          <label>Pause Freitag (Min)
+          <label>Pause (Min)
             <input type="number" id="plannerFridayPause" min="0" max="180" step="5">
           </label>
         </div>
-        <div class="planner-hint" id="plannerFridayHint"></div>
+        <div class="wp-steps">
+          <button type="button" data-fr-step="-30">−30</button>
+          <button type="button" data-fr-step="-15">−15</button>
+          <button type="button" data-fr-step="15">+15</button>
+          <button type="button" data-fr-step="30">+30</button>
+        </div>
+        <div class="wp-hint" id="plannerFridayHint"></div>
       </section>
 
-      <section class="planner-special-section">
-        <div class="planner-section-title">Tage dieser Woche</div>
-        <div class="muted planner-mini-copy">Alle Arbeitstage bleiben sichtbar. Vergangene Tage zählen mit ihren Ist-Zeiten; bei offenen Tagen kannst du eine feste Endzeit eintragen.</div>
-        <div id="plannerConstraintRows" class="planner-constraints"></div>
-      </section>
+      <section id="weekPlannerPreview" class="week-planner-preview wp-preview" aria-live="polite"></section>
 
-      <label>Übrige Zeit verteilen
-        <select id="plannerDistribution">
+      <div class="wp-dist">
+        <span>Restzeit verteilen</span>
+        <div class="h-seg" role="radiogroup" aria-label="Restzeit verteilen">
+          <button type="button" data-plan-dist="even" role="radio">Gleichmäßig</button>
+          <button type="button" data-plan-dist="frontload" role="radio">Vorarbeiten</button>
+        </div>
+        <select id="plannerDistribution" hidden>
           <option value="even">Gleichmäßig verteilen</option>
           <option value="frontload">Frühestmöglich vorarbeiten</option>
         </select>
-      </label>
+      </div>
 
-      <section id="weekPlannerPreview" class="week-planner-preview" aria-live="polite"></section>
+      <section class="planner-special-section wp-fixed" id="plannerFixedSection">
+        <div class="planner-section-title">Feste Endzeit für offene Tage <small>optional</small></div>
+        <div id="plannerConstraintRows" class="planner-constraints"></div>
+      </section>
 
-      <div class="planner-dialog-actions">
-        <button type="button" class="danger-ghost" id="deleteWeekPlanBtn">Plan löschen</button>
-        <div class="planner-save-actions">
-          <button type="button" class="ghost-btn" data-close="weekPlannerDialog">Abbrechen</button>
-          <button type="submit" class="primary-small">Plan speichern</button>
-        </div>
+      <div class="planner-dialog-actions wp-actions">
+        <button type="button" class="ghost-btn" data-close="weekPlannerDialog">Abbrechen</button>
+        <button type="submit" class="primary-small">Plan speichern</button>
+        <button type="button" class="wp-delete" id="deleteWeekPlanBtn">Plan löschen</button>
       </div>
     </form>
   </dialog>
@@ -3891,7 +3928,7 @@ function renderWeekPlanPreview(plan){
   const gapClass=result.gap>=0?"positive":"negative";
   const gapText=result.gap===0?"Wochenziel exakt geplant":result.gap>0?`${formatCompact(result.gap)} über Wochenziel`:`${formatCompact(Math.abs(result.gap))} fehlen noch`;
   return `<div class="planner-preview-head"><span>Plan</span><strong class="${gapClass}">${gapText}</strong></div>
-    <div class="planner-preview-list">${result.rows.map(row=>`<div class="planner-preview-row"><span>${plannerRowLabel(row)}</span><strong>${plannerStatusText(row)}</strong><small class="${row.delta>=0?"positive":"negative"}">${row.target?formatSignedHours(row.delta):""}</small></div>`).join("")}</div>${warningHTML}`;
+    <div class="planner-preview-list">${result.rows.map(row=>`<div class="planner-preview-row${row.key===localDateKey(new Date())?" today":""}"><span>${plannerRowLabel(row)}</span><strong>${plannerStatusText(row)}</strong><small class="${row.delta>=0?"positive":"negative"}">${row.target?formatSignedHours(row.delta):""}</small></div>`).join("")}</div>${warningHTML}`;
 }
 function plannerConstraintCandidates(){
   const now=new Date(),todayKey=localDateKey(now),mon=mondayOfDate(now),items=[];
@@ -3930,7 +3967,8 @@ function updateWeekPlannerPreview(){
   if(end && !plannerFridayPauseTouched) $("plannerFridayPause").value=plannerRecommendedPause(currentPlannerFridayKey(),end);
   const draft=readWeekPlannerDraft();
   const fridayRow=$("plannerFridayRowValue"); if(fridayRow) fridayRow.textContent=end||"—";
-  $("plannerFridayHint").textContent=end?`Beginn ${plannerStartForKey(currentPlannerFridayKey())} · kurze Freitage bekommen automatisch 0 Min Pause, solange du den Wert nicht selbst änderst.`:"Wunschzeit für Freitag wählen.";
+  $("plannerFridayHint").textContent=end?`Beginn ${plannerStartForKey(currentPlannerFridayKey())} · Pause ${plannerFridayPauseTouched?"selbst gesetzt":"automatisch nach Arbeitszeit"}`:"Wunschzeit für Freitag wählen.";
+  document.querySelectorAll("[data-plan-dist]").forEach(b=>b.setAttribute("aria-checked",String(b.dataset.planDist===$("plannerDistribution").value)));
   $("weekPlannerPreview").innerHTML=end?renderWeekPlanPreview(draft):'<div class="planner-empty">Wähle zuerst deine gewünschte Feierabendzeit für Freitag.</div>';
 }
 function currentPlannerFridayKey(){
@@ -3943,37 +3981,7 @@ function renderPlannerConstraintRows(plan){
     const spec=plan.constraints?.[key]||{};
     const dateText=`${pad(d.getDate())}.${pad(d.getMonth()+1)}.`;
 
-    if(isFriday){
-      return `<div class="planner-constraint-row planner-row-locked">
-        <div class="planner-day"><strong>${weekdayName(d,false)}</strong><small>${dateText} · Beginn ${plannerStartForKey(key)}</small></div>
-        <div class="planner-row-state"><span>Wunschziel</span><strong id="plannerFridayRowValue">${$("plannerFridayEnd").value||"—"}</strong><small>oben einstellen</small></div>
-      </div>`;
-    }
-
-    if(recordIsCreditedStatus(status) || status==="off"){
-      return `<div class="planner-constraint-row planner-row-locked">
-        <div class="planner-day"><strong>${weekdayName(d,false)}</strong><small>${dateText}</small></div>
-        <div class="planner-row-state"><span>Status</span><strong>${STATUS[status]?.label||status}</strong><small>wird automatisch berücksichtigt</small></div>
-      </div>`;
-    }
-
-    if(rec?.end || isManualWorkRecord(rec)){
-      const c=recordCalc(key,false);
-      const main=isManualWorkRecord(rec)?`${formatCompact(c.worked)} Arbeit`:`${rec.start||"—"}–${rec.end}`;
-      const sub=isManualWorkRecord(rec)?`Sammelbuchung · ${formatSignedHours(c.balance)}`:`${c.breakMin?`${formatCompact(c.breakMin)} Pause · `:""}${formatSignedHours(c.balance)}`;
-      return `<div class="planner-constraint-row planner-row-locked">
-        <div class="planner-day"><strong>${weekdayName(d,false)}</strong><small>${dateText}</small></div>
-        <div class="planner-row-state"><span>Ist-Zeit</span><strong>${main}</strong><small>${sub}</small></div>
-      </div>`;
-    }
-
-    if(locked){
-      return `<div class="planner-constraint-row planner-row-locked">
-        <div class="planner-day"><strong>${weekdayName(d,false)}</strong><small>${dateText}</small></div>
-        <div class="planner-row-state"><span>Vergangen</span><strong>${rec?.start||"—"}</strong><small>nicht abgeschlossen</small></div>
-      </div>`;
-    }
-
+    if(isFriday||locked||recordIsCreditedStatus(status)||status==="off"||rec?.end||isManualWorkRecord(rec)) return "";
     return `<div class="planner-constraint-row">
       <div class="planner-day"><strong>${weekdayName(d,false)}</strong><small>${dateText} · Beginn ${plannerStartForKey(key)}</small></div>
       <label>Feierabend<input type="time" data-planner-end="${key}" value="${spec.end||""}"></label>
@@ -3981,6 +3989,7 @@ function renderPlannerConstraintRows(plan){
     </div>`;
   }).join("");
   box.querySelectorAll("input").forEach(el=>el.addEventListener("input",updateWeekPlannerPreview));
+  $("plannerFixedSection").hidden=!box.innerHTML.trim();
 }
 
 function openWeekPlanner(){
@@ -6540,6 +6549,12 @@ $("editForm").addEventListener("submit",async e=>{
 $("plannerFridayEnd").addEventListener("input",()=>{plannerFridayPauseTouched=false;updateWeekPlannerPreview();});
 $("plannerFridayPause").addEventListener("input",()=>{plannerFridayPauseTouched=true;updateWeekPlannerPreview();});
 $("plannerDistribution").addEventListener("change",updateWeekPlannerPreview);
+document.querySelectorAll("[data-plan-dist]").forEach(b=>b.addEventListener("click",()=>{$("plannerDistribution").value=b.dataset.planDist;updateWeekPlannerPreview();}));
+document.querySelectorAll("[data-fr-step]").forEach(b=>b.addEventListener("click",()=>{
+  const m=minutesFromTime($("plannerFridayEnd").value)??720;
+  $("plannerFridayEnd").value=timeFromMinutes(clamp(m+Number(b.dataset.frStep),6*60,20*60));
+  plannerFridayPauseTouched=false;updateWeekPlannerPreview();
+}));
 $("weekPlannerForm").addEventListener("submit",e=>{
   e.preventDefault();
   const plan=readWeekPlannerDraft();

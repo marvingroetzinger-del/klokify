@@ -715,7 +715,7 @@ function renderWeekPlanPreview(plan){
   const gapClass=result.gap>=0?"positive":"negative";
   const gapText=result.gap===0?"Wochenziel exakt geplant":result.gap>0?`${formatCompact(result.gap)} über Wochenziel`:`${formatCompact(Math.abs(result.gap))} fehlen noch`;
   return `<div class="planner-preview-head"><span>Plan</span><strong class="${gapClass}">${gapText}</strong></div>
-    <div class="planner-preview-list">${result.rows.map(row=>`<div class="planner-preview-row"><span>${plannerRowLabel(row)}</span><strong>${plannerStatusText(row)}</strong><small class="${row.delta>=0?"positive":"negative"}">${row.target?formatSignedHours(row.delta):""}</small></div>`).join("")}</div>${warningHTML}`;
+    <div class="planner-preview-list">${result.rows.map(row=>`<div class="planner-preview-row${row.key===localDateKey(new Date())?" today":""}"><span>${plannerRowLabel(row)}</span><strong>${plannerStatusText(row)}</strong><small class="${row.delta>=0?"positive":"negative"}">${row.target?formatSignedHours(row.delta):""}</small></div>`).join("")}</div>${warningHTML}`;
 }
 function plannerConstraintCandidates(){
   const now=new Date(),todayKey=localDateKey(now),mon=mondayOfDate(now),items=[];
@@ -754,7 +754,8 @@ function updateWeekPlannerPreview(){
   if(end && !plannerFridayPauseTouched) $("plannerFridayPause").value=plannerRecommendedPause(currentPlannerFridayKey(),end);
   const draft=readWeekPlannerDraft();
   const fridayRow=$("plannerFridayRowValue"); if(fridayRow) fridayRow.textContent=end||"—";
-  $("plannerFridayHint").textContent=end?`Beginn ${plannerStartForKey(currentPlannerFridayKey())} · kurze Freitage bekommen automatisch 0 Min Pause, solange du den Wert nicht selbst änderst.`:"Wunschzeit für Freitag wählen.";
+  $("plannerFridayHint").textContent=end?`Beginn ${plannerStartForKey(currentPlannerFridayKey())} · Pause ${plannerFridayPauseTouched?"selbst gesetzt":"automatisch nach Arbeitszeit"}`:"Wunschzeit für Freitag wählen.";
+  document.querySelectorAll("[data-plan-dist]").forEach(b=>b.setAttribute("aria-checked",String(b.dataset.planDist===$("plannerDistribution").value)));
   $("weekPlannerPreview").innerHTML=end?renderWeekPlanPreview(draft):'<div class="planner-empty">Wähle zuerst deine gewünschte Feierabendzeit für Freitag.</div>';
 }
 function currentPlannerFridayKey(){
@@ -767,37 +768,7 @@ function renderPlannerConstraintRows(plan){
     const spec=plan.constraints?.[key]||{};
     const dateText=`${pad(d.getDate())}.${pad(d.getMonth()+1)}.`;
 
-    if(isFriday){
-      return `<div class="planner-constraint-row planner-row-locked">
-        <div class="planner-day"><strong>${weekdayName(d,false)}</strong><small>${dateText} · Beginn ${plannerStartForKey(key)}</small></div>
-        <div class="planner-row-state"><span>Wunschziel</span><strong id="plannerFridayRowValue">${$("plannerFridayEnd").value||"—"}</strong><small>oben einstellen</small></div>
-      </div>`;
-    }
-
-    if(recordIsCreditedStatus(status) || status==="off"){
-      return `<div class="planner-constraint-row planner-row-locked">
-        <div class="planner-day"><strong>${weekdayName(d,false)}</strong><small>${dateText}</small></div>
-        <div class="planner-row-state"><span>Status</span><strong>${STATUS[status]?.label||status}</strong><small>wird automatisch berücksichtigt</small></div>
-      </div>`;
-    }
-
-    if(rec?.end || isManualWorkRecord(rec)){
-      const c=recordCalc(key,false);
-      const main=isManualWorkRecord(rec)?`${formatCompact(c.worked)} Arbeit`:`${rec.start||"—"}–${rec.end}`;
-      const sub=isManualWorkRecord(rec)?`Sammelbuchung · ${formatSignedHours(c.balance)}`:`${c.breakMin?`${formatCompact(c.breakMin)} Pause · `:""}${formatSignedHours(c.balance)}`;
-      return `<div class="planner-constraint-row planner-row-locked">
-        <div class="planner-day"><strong>${weekdayName(d,false)}</strong><small>${dateText}</small></div>
-        <div class="planner-row-state"><span>Ist-Zeit</span><strong>${main}</strong><small>${sub}</small></div>
-      </div>`;
-    }
-
-    if(locked){
-      return `<div class="planner-constraint-row planner-row-locked">
-        <div class="planner-day"><strong>${weekdayName(d,false)}</strong><small>${dateText}</small></div>
-        <div class="planner-row-state"><span>Vergangen</span><strong>${rec?.start||"—"}</strong><small>nicht abgeschlossen</small></div>
-      </div>`;
-    }
-
+    if(isFriday||locked||recordIsCreditedStatus(status)||status==="off"||rec?.end||isManualWorkRecord(rec)) return "";
     return `<div class="planner-constraint-row">
       <div class="planner-day"><strong>${weekdayName(d,false)}</strong><small>${dateText} · Beginn ${plannerStartForKey(key)}</small></div>
       <label>Feierabend<input type="time" data-planner-end="${key}" value="${spec.end||""}"></label>
@@ -805,6 +776,7 @@ function renderPlannerConstraintRows(plan){
     </div>`;
   }).join("");
   box.querySelectorAll("input").forEach(el=>el.addEventListener("input",updateWeekPlannerPreview));
+  $("plannerFixedSection").hidden=!box.innerHTML.trim();
 }
 
 function openWeekPlanner(){
@@ -3364,6 +3336,12 @@ $("editForm").addEventListener("submit",async e=>{
 $("plannerFridayEnd").addEventListener("input",()=>{plannerFridayPauseTouched=false;updateWeekPlannerPreview();});
 $("plannerFridayPause").addEventListener("input",()=>{plannerFridayPauseTouched=true;updateWeekPlannerPreview();});
 $("plannerDistribution").addEventListener("change",updateWeekPlannerPreview);
+document.querySelectorAll("[data-plan-dist]").forEach(b=>b.addEventListener("click",()=>{$("plannerDistribution").value=b.dataset.planDist;updateWeekPlannerPreview();}));
+document.querySelectorAll("[data-fr-step]").forEach(b=>b.addEventListener("click",()=>{
+  const m=minutesFromTime($("plannerFridayEnd").value)??720;
+  $("plannerFridayEnd").value=timeFromMinutes(clamp(m+Number(b.dataset.frStep),6*60,20*60));
+  plannerFridayPauseTouched=false;updateWeekPlannerPreview();
+}));
 $("weekPlannerForm").addEventListener("submit",e=>{
   e.preventDefault();
   const plan=readWeekPlannerDraft();

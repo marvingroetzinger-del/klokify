@@ -2798,3 +2798,33 @@ button:disabled{cursor:default;opacity:.5}
 .e-preview{grid-column:1/-1;font:500 var(--fs-s)/1.35 var(--font-num);color:var(--muted)}
 .e-preview b{color:var(--text);font-weight:700}
 .e-preview b.pos{color:var(--lime)} .e-preview b.neg{color:var(--danger)}
+
+/* ════ V37 Woche planen ════ */
+.wp37 form{display:flex;flex-direction:column;gap:14px}
+.wp37 input{font:600 var(--fs-m)/1.2 var(--font-num)!important;min-height:48px}
+.wp-goal{display:flex;flex-direction:column;gap:8px;padding:12px;border-radius:14px;background:var(--panel2)}
+.wp-goal-row{display:grid;grid-template-columns:1.4fr 1fr;gap:8px}
+.wp-goal label{font-size:var(--fs-s);color:var(--muted);display:flex;flex-direction:column;gap:4px}
+.wp-goal input#plannerFridayEnd{font-size:var(--fs-l)!important;color:var(--lime)}
+.wp-steps{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.wp-steps button{min-height:40px;border:0;border-radius:10px;background:var(--panel);color:var(--text);font:700 var(--fs-s)/1 var(--font-num)}
+.wp-hint{font-size:var(--fs-s);color:var(--muted)}
+.wp-preview{border-radius:14px;overflow:hidden}
+.wp-preview .planner-preview-head{display:flex;justify-content:space-between;align-items:baseline;padding:10px 12px;font-size:var(--fs-s)}
+.wp-preview .planner-preview-head strong{font-size:var(--fs-m)}
+.wp-preview .planner-preview-row{display:grid;grid-template-columns:1fr auto 64px;gap:8px;padding:9px 12px;font:500 var(--fs-m)/1.2 var(--font-num)}
+.wp-preview .planner-preview-row small{font-size:var(--fs-m)!important;text-align:right}
+.wp-preview .planner-preview-row.today{background:rgba(182,226,76,.08);box-shadow:inset 3px 0 0 var(--lime)}
+.wp-preview .planner-preview-row:last-child strong{color:var(--lime)}
+.wp-dist{display:flex;flex-direction:column;gap:6px}
+.wp-dist>span{font-size:var(--fs-s);color:var(--muted)}
+.wp-dist .h-seg button[aria-checked="true"]{background:var(--panel2);color:var(--text)}
+.wp-fixed[hidden]{display:none}
+.wp-fixed .planner-section-title small{color:var(--muted);font-weight:500}
+.wp-actions{position:sticky;bottom:0;margin:0 -20px;padding:10px 20px calc(12px + env(safe-area-inset-bottom));background:var(--panel);border-top:1px solid var(--line);display:grid!important;grid-template-columns:1fr 1fr;gap:8px;z-index:2}
+.wp-delete{grid-column:1/-1;border:0;background:none;color:var(--danger);font:600 var(--fs-s)/1 var(--font-ui);padding:6px}
+.wp-delete[hidden]{display:none}
+.wp-preview .planner-preview-row{grid-template-columns:minmax(0,1fr) auto 76px}
+.wp-preview .planner-preview-row small{white-space:nowrap;font-size:var(--fs-m)!important;font-weight:700}
+.wp37 .wp-goal-row>*{min-width:0}
+.wp37 .wp-goal input{width:100%;min-width:0}
