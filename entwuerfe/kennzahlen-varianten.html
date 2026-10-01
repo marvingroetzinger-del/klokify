@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Klokify Kennzahlen</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Semi+Condensed:wght@600;700&display=swap">
+<style>
+/* Vergleich von drei Darstellungen für Noch / Arbeit / Pause, ausgelegt auf 411 px */
+:root{
+  color-scheme:dark;
+  --bg:#1b2027;--panel:#252b34;--panel2:#2f3640;--line:#3a424e;
+  --text:#eef1f4;--muted:#a2acb9;--lime:#b6e24c;--orange:#f2a83f;
+  --fs-s:13px;--fs-m:16px;--fs-l:20px;--fs-xl:28px;
+  --font-ui:"Barlow",system-ui,sans-serif;--font-num:"Barlow Semi Condensed","Barlow",system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font-ui);font-size:var(--fs-m)}
+.wrap{max-width:480px;margin:0 auto;padding-inline:16px;padding-block:16px 60px;display:flex;flex-direction:column;gap:22px}
+h1{font-size:var(--fs-l);margin:0}
+.intro{color:var(--muted);margin:-12px 0 0}
+.label{display:flex;align-items:baseline;gap:10px;margin-bottom:8px}
+.label b{font:700 var(--fs-xl)/1 var(--font-num);color:var(--lime)}
+.label span{font-weight:600}
+.label small{color:var(--muted);font-size:var(--fs-s);display:block}
+.card{background:var(--panel);border-radius:20px;padding:14px;display:flex;flex-direction:column;gap:12px}
+.kicker{font-size:var(--fs-s);font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.head{display:flex;justify-content:space-between;align-items:center}
+.chip{font-size:var(--fs-s);font-weight:600;padding:4px 10px;border-radius:999px;background:rgba(182,226,76,.14);color:var(--lime)}
+.num{font-family:var(--font-num);font-variant-numeric:tabular-nums}
+
+/* Zeitstrahl (gleich in allen Varianten) */
+.tl-ends{display:flex;justify-content:space-between;align-items:flex-end;font-size:var(--fs-s);color:var(--muted)}
+.tl-ends b{font:600 var(--fs-l)/1 var(--font-num);color:var(--text);margin-left:6px}
+.tl-ends .end b{color:var(--lime);font-size:var(--fs-xl);font-weight:700}
+.track{position:relative;height:40px;border-radius:10px;background:var(--panel2);margin-top:6px;overflow:hidden}
+.fill{position:absolute;inset:0 auto 0 0;width:56%;background:var(--lime)}
+.pz{position:absolute;top:0;bottom:0;left:28%;width:3%;background:var(--orange)}
+.now{position:absolute;top:0;bottom:0;left:56%;width:3px;margin-left:-1.5px;background:var(--text)}
+.pzl{font:600 var(--fs-s)/1 var(--font-num);color:var(--orange);margin:6px 0 0 calc(29.5% - 40px)}
+
+/* Variante A: Kacheln mit Mini-Balken */
+.a-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.a-stat{background:var(--panel2);border-radius:12px;padding:10px 12px 12px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.a-stat span{font-size:var(--fs-s);color:var(--muted);display:flex;justify-content:space-between}
+.a-stat b{font:700 var(--fs-xl)/1 var(--font-num)}
+.a-stat b small{font-size:var(--fs-m);color:var(--muted)}
+.bar{height:6px;border-radius:3px;background:var(--bg);overflow:hidden}
+.bar i{display:block;height:100%;border-radius:3px}
+.lime{color:var(--lime)} .or{color:var(--orange)}
+.bg-lime{background:var(--lime)} .bg-or{background:var(--orange)} .bg-mut{background:var(--muted)}
+
+/* Variante B: drei Ringe */
+.b-rings{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.ring{display:flex;flex-direction:column;align-items:center;gap:4px}
+.ring svg{width:96px;height:96px;display:block}
+.ring .c{position:relative}
+.ring .v{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.ring .v b{font:700 var(--fs-l)/1 var(--font-num)}
+.ring .v small{font-size:var(--fs-s);color:var(--muted)}
+.ring > span{font-size:var(--fs-s);color:var(--muted);font-weight:600}
+
+/* Variante C: großer Restwert + zwei Fortschrittszeilen */
+.c-top{display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:center}
+.c-big{display:flex;flex-direction:column;padding-right:16px;border-right:1px solid var(--line)}
+.c-big span{font-size:var(--fs-s);color:var(--muted)}
+.c-big b{font:700 44px/1 var(--font-num);color:var(--lime)}
+.c-big b small{font-size:var(--fs-l)}
+.c-rows{display:flex;flex-direction:column;gap:10px;min-width:0}
+.c-row{display:grid;grid-template-columns:48px 1fr;column-gap:8px;row-gap:4px;align-items:center}
+.c-row > span{font-size:var(--fs-s);color:var(--muted);grid-row:span 2}
+.c-row .val{font:600 var(--fs-m)/1 var(--font-num);display:flex;justify-content:space-between}
+.c-row .val em{font-style:normal;color:var(--muted);font-weight:500}
+.c-row .bar{height:8px}
+
+.note{font-size:var(--fs-s);color:var(--muted);margin:2px 4px 0}
+.note b{color:var(--text)}
+.pixel{position:fixed;right:4px;bottom:132px;font:600 11px/1 system-ui,sans-serif;color:var(--muted);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:4px 6px;opacity:.85}
+.wrap{padding-block:16px 150px}
+.pz.run{background:repeating-linear-gradient(135deg,var(--orange) 0 6px,#c9852b 6px 12px)}
+.bar i.run{background:repeating-linear-gradient(135deg,var(--orange) 0 5px,#c9852b 5px 10px)}
+.pzl{position:relative;height:16px;margin:6px 0 0}
+.pzl span{position:absolute;transform:translateX(-50%);white-space:nowrap}
+.chip.pause{background:rgba(242,168,63,.16);color:var(--orange)}
+.chip.done{background:var(--panel2);color:var(--text)}
+.neg{color:#f07672}
+.demo{position:fixed;left:0;right:0;bottom:0;background:#14181e;border-top:1px solid var(--line);padding:10px 16px calc(12px + env(safe-area-inset-bottom,0px));z-index:10}
+.demo-in{max-width:448px;margin:0 auto;display:flex;flex-direction:column;gap:8px}
+.demo-row{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}
+.demo-row button{flex:none;padding:8px 10px;border-radius:10px;border:0;background:var(--panel2);color:var(--text);font:600 var(--fs-s)/1 var(--font-ui)}
+.demo-row button[aria-pressed="true"]{background:var(--lime);color:#18210a}
+.demo-time{display:flex;align-items:center;gap:10px;font-size:var(--fs-s);color:var(--muted)}
+.demo-time b{font:700 var(--fs-l)/1 var(--font-num);color:var(--text);min-width:52px}
+.demo-time input{flex:1;accent-color:var(--lime)}
+.demo-time button{padding:8px 10px;border-radius:10px;border:0;background:var(--panel2);color:var(--orange);font:600 var(--fs-s)/1 var(--font-ui)}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <h1>Noch · Arbeit · Pause</h1>
+  <p class="intro">Drei Varianten, alle rechnen live mit. Unten Zustand wählen, Uhrzeit verschieben oder Pause starten.</p>
+  <section><div class="label"><b>0</b><span>Bisher (v37)<small>drei Zahlenkacheln</small></span></div><div class="card" id="v0"></div></section>
+  <section><div class="label"><b>A</b><span>Kacheln mit Balken<small>wie bisher, jede Kachel zeigt den Füllstand</small></span></div><div class="card" id="vA"></div></section>
+  <section><div class="label"><b>B</b><span>Drei Ringe<small>Füllstand auf einen Blick, wie eine Uhr</small></span></div><div class="card" id="vB"></div><p class="note">Braucht etwa 40 px mehr Höhe als A.</p></section>
+  <section><div class="label"><b>C</b><span>Restzeit groß, Arbeit und Pause als Balken<small>das Wichtigste zuerst, der Rest als Fortschritt</small></span></div><div class="card" id="vC"></div>
+  <p class="note"><b>Empfehlung.</b> Die Frage „wie lange noch“ steht groß links. Arbeit und Pause liest man über die Balkenlänge, ohne zu rechnen. Gleiche Höhe wie bisher.</p></section>
+</div>
+<div class="demo" aria-label="Demo-Steuerung">
+  <div class="demo-in">
+    <div class="demo-row" id="scen"></div>
+    <div class="demo-time"><span>Uhrzeit</span><b id="tOut"></b><input type="range" id="tRange" min="395" max="1080" step="5" aria-label="Uhrzeit simulieren"><button type="button" id="pBtn">Pause</button></div>
+  </div>
+</div>
+<div class="pixel" id="pixel"></div>
+<script>
+const pad=n=>String(n).padStart(2,"0");
+const hhmm=m=>{m=((Math.round(m)%1440)+1440)%1440;return pad(Math.floor(m/60))+":"+pad(m%60)};
+const dur=m=>{m=Math.round(Math.abs(m));return Math.floor(m/60)+":"+pad(m%60)};
+const clamp=(n,a,b)=>Math.min(b,Math.max(a,n));
+const legal=w=>w>540?45:w>360?30:0;
+const TARGET=480,PLANNED=30;
+const SC={
+  run:{l:"Läuft",now:680,end:null,pauses:[{s:540,e:555}]},
+  early:{l:"Früh",now:470,end:null,pauses:[]},
+  pause:{l:"Pause läuft",now:735,end:null,pauses:[{s:540,e:555},{s:720,e:null}]},
+  over:{l:"Soll erreicht",now:935,end:null,pauses:[{s:540,e:555},{s:720,e:740}]},
+  done:{l:"Feierabend",now:945,end:945,pauses:[{s:540,e:555},{s:720,e:740}]}
+};
+let sc="run",S=structuredClone(SC.run);const START=395;
+
+function calc(){
+  const ref=S.end??S.now;
+  const ps=S.pauses.filter(p=>p.s<ref);
+  const used=ps.reduce((a,p)=>a+Math.max(0,Math.min(p.e??ref,ref)-p.s),0);
+  const running=!S.end&&ps.some(p=>p.e==null);
+  const plan=Math.max(used,PLANNED,legal(TARGET));
+  const end=START+TARGET+plan;
+  const worked=Math.max(0,ref-START-used);
+  const bal=worked-TARGET;
+  return {ref,ps,used,running,plan,end,worked,bal,left:Math.max(0,end-S.now)};
+}
+function key(c){
+  if(S.end) return {lbl:"Saldo",val:(c.bal>=0?"+":"−")+dur(c.bal),sub:`Ende ${hhmm(S.end)}`,cls:c.bal>=0?"lime":"neg",pct:100};
+  if(c.bal>=0) return {lbl:"Zeitplus",val:"+"+dur(c.bal),sub:"über Soll",cls:"lime",pct:100};
+  return {lbl:"Noch",val:dur(c.left),sub:`bis ${hhmm(c.end)}`,cls:"lime",pct:clamp((S.now-START)/(c.end-START)*100,0,100)};
+}
+function chip(c){
+  if(S.end) return '<span class="chip done">Feierabend</span>';
+  if(c.running) return '<span class="chip pause">Pause läuft</span>';
+  return c.bal>=0?'<span class="chip">Plus läuft</span>':'<span class="chip">läuft</span>';
+}
+function timeline(c){
+  const axis=S.end??Math.max(c.end,S.now),span=axis-START,pct=m=>clamp((m-START)/span*100,0,100);
+  const blocks=c.ps.map(p=>{const e=Math.min(p.e??c.ref,c.ref);return {l:pct(p.s),w:Math.max(.8,pct(e)-pct(p.s)),c:pct((p.s+e)/2),run:p.e==null&&!S.end,t:p.e==null&&!S.end?`seit ${hhmm(p.s)}`:`${hhmm(p.s)}–${hhmm(e)}`}});
+  const endLbl=S.end?"Ende":c.bal>=0?"Soll erreicht":"Feierabend";
+  return `<div><div class="tl-ends"><span>Beginn<b>${hhmm(START)}</b></span><span class="end">${endLbl}<b>${hhmm(S.end??c.end)}</b></span></div>
+  <div class="track"><div class="fill" style="width:${pct(c.ref)}%"></div>${blocks.map(b=>`<i class="pz${b.run?" run":""}" style="left:${b.l}%;width:${b.w}%"></i>`).join("")}${S.end?"":`<i class="now" style="left:${pct(S.now)}%"></i>`}</div>
+  <div class="pzl num">${blocks.map(b=>`<span style="left:${clamp(b.c,12,88)}%">${b.t}</span>`).join("")}</div></div>`;
+}
+const head=c=>`<div class="head"><span class="kicker">Heute</span>${chip(c)}</div>`;
+const wp=c=>clamp(c.worked/TARGET*100,0,100), pp=c=>clamp(c.used/c.plan*100,0,100);
+const pauseSub=c=>c.running?`seit ${hhmm(c.ps.find(p=>p.e==null).s)}`:c.used>=c.plan?"erledigt":`noch ${c.plan-c.used} Min`;
+
+function v0(c){const k=key(c);return head(c)+`<div class="a-stats">
+  <div class="a-stat"><span>${k.lbl}</span><b class="${k.cls}">${k.val}<small> h</small></b><span>${k.lbl==="Noch"?"verbleibend":k.sub}</span></div>
+  <div class="a-stat"><span>Arbeit</span><b>${dur(c.worked)}<small> h</small></b><span>von 8:00 h</span></div>
+  <div class="a-stat"><span>Pause</span><b class="or">${c.used}<small> Min</small></b><span>von ${c.plan} Min</span></div></div>`;}
+function vA(c){const k=key(c);return head(c)+`<div class="a-stats">
+  <div class="a-stat"><span>${k.lbl}</span><b class="${k.cls}">${k.val}<small> h</small></b><div class="bar"><i class="bg-lime" style="width:${k.pct}%"></i></div><span>${k.sub}</span></div>
+  <div class="a-stat"><span>Arbeit <em class="num" style="font-style:normal">${Math.round(c.worked/TARGET*100)} %</em></span><b>${dur(c.worked)}<small> h</small></b><div class="bar"><i class="bg-lime" style="width:${wp(c)}%"></i></div><span>von 8:00 h</span></div>
+  <div class="a-stat"><span>Pause</span><b class="or">${c.used}<small> Min</small></b><div class="bar"><i class="bg-or${c.running?" run":""}" style="width:${pp(c)}%"></i></div><span>${pauseSub(c)}</span></div></div>`+timeline(c);}
+function ring(p,color,inner,label){const C=251.3;return `<div class="ring"><div class="c"><svg viewBox="0 0 96 96"><circle cx="48" cy="48" r="40" fill="none" stroke="#2f3640" stroke-width="9"/><circle cx="48" cy="48" r="40" fill="none" stroke="${color}" stroke-width="9" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${C*(1-p/100)}" transform="rotate(-90 48 48)"/></svg><div class="v">${inner}</div></div><span>${label}</span></div>`;}
+function vB(c){const k=key(c);return head(c)+`<div class="b-rings">
+  ${ring(k.pct,"#b6e24c",`<b class="${k.cls}">${k.val}</b><small>${k.lbl.toLowerCase()}</small>`,k.sub)}
+  ${ring(wp(c),"#eef1f4",`<b>${dur(c.worked)}</b><small>von 8:00</small>`,"Arbeit")}
+  ${ring(pp(c),"#f2a83f",`<b class="or">${c.used}</b><small>von ${c.plan} Min</small>`,"Pause")}</div>`+timeline(c);}
+function vC(c){const k=key(c);return head(c)+`<div class="c-top">
+  <div class="c-big"><span>${k.lbl}</span><b class="${k.cls}">${k.val}<small> h</small></b><span>${k.sub}</span></div>
+  <div class="c-rows">
+    <div class="c-row"><span>Arbeit</span><div class="val">${dur(c.worked)} h<em>von 8:00</em></div><div class="bar"><i class="bg-lime" style="width:${wp(c)}%"></i></div></div>
+    <div class="c-row"><span>Pause</span><div class="val or">${c.used} Min<em>${c.running?"läuft":`von ${c.plan}`}</em></div><div class="bar"><i class="bg-or${c.running?" run":""}" style="width:${pp(c)}%"></i></div></div>
+  </div></div>`+timeline(c);}
+
+function render(){
+  const c=calc();
+  v0El.innerHTML=v0(c);vAEl.innerHTML=vA(c);vBEl.innerHTML=vB(c);vCEl.innerHTML=vC(c);
+  scenEl.innerHTML=Object.entries(SC).map(([k,v])=>`<button type="button" data-s="${k}" aria-pressed="${k===sc}">${v.l}</button>`).join("");
+  tOut.textContent=hhmm(S.now);tRange.value=S.now;
+  pBtn.textContent=S.end?"–":c.running?"Weiter":"Pause";pBtn.disabled=!!S.end;
+}
+const [v0El,vAEl,vBEl,vCEl,scenEl,tOut,tRange,pBtn]=["v0","vA","vB","vC","scen","tOut","tRange","pBtn"].map(id=>document.getElementById(id));
+scenEl.addEventListener("click",e=>{const b=e.target.closest("[data-s]");if(!b)return;sc=b.dataset.s;S=structuredClone(SC[sc]);render();});
+tRange.addEventListener("input",()=>{S.now=+tRange.value;if(S.end&&S.now<S.end)S.now=S.end;S.pauses=S.pauses.filter(p=>p.s<S.now);render();});
+pBtn.addEventListener("click",()=>{const c=calc();if(c.running)S.pauses.forEach(p=>{if(p.e==null)p.e=S.now});else S.pauses.push({s:S.now,e:null});render();});
+function px(){const vv=window.visualViewport;document.getElementById("pixel").textContent=`${innerWidth}×${innerHeight}`+(vv?` · vv ${Math.round(vv.width)}×${Math.round(vv.height)}`:"")}
+px();addEventListener("resize",px);window.visualViewport?.addEventListener("resize",px);
+render();
+</script>
+</body>
+</html>
