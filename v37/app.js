@@ -2188,28 +2188,46 @@ function describeExistingDay(key){
   if((rec.pauses||[]).length) parts.push(`${pauseMinutes(rec,false,key)} Min Pause`);
   return parts.join(" · ");
 }
+/* V37: eigene Bestätigung statt Browser-Fenster – funktioniert auch in
+   eingebetteten Ansichten, in denen der Browser diese Fenster blockiert. */
+function askConfirm(message,{ok="Ja",cancel="Abbrechen",danger=false}={}){
+  return new Promise(resolve=>{
+    const d=$("confirmDialog");
+    $("confirmText").textContent=message;
+    const okBtn=$("confirmOk"),noBtn=$("confirmCancel");
+    okBtn.textContent=ok;noBtn.textContent=cancel;
+    okBtn.className=danger?"danger-btn":"primary-small";
+    noBtn.hidden=!cancel;
+    const done=v=>{okBtn.onclick=noBtn.onclick=null;d.onclose=null;if(d.open)d.close();resolve(v);};
+    okBtn.onclick=()=>done(true);
+    noBtn.onclick=()=>done(false);
+    d.onclose=()=>done(false);
+    d.showModal();
+  });
+}
+function notify(message){ return askConfirm(message,{ok:"OK",cancel:""}); }
 function confirmOverwriteDay(key,newStatus){
-  if(!recordHasValues(key)) return true;
+  if(!recordHasValues(key)) return Promise.resolve(true);
   const d=dateFromKey(key);
   const old=describeExistingDay(key) || "vorhandene Werte";
   const neu=STATUS[newStatus]?.label||newStatus;
-  return confirm(
-    `Für ${weekdayName(d,false)}, ${pad(d.getDate())}.${pad(d.getMonth()+1)}. sind bereits Werte gespeichert:\n\n${old}\n\nMöchtest du diese Werte wirklich mit „${neu}“ überschreiben?`
+  return askConfirm(
+    `Für ${weekdayName(d,false)}, ${pad(d.getDate())}.${pad(d.getMonth()+1)}. sind bereits Werte gespeichert:\n\n${old}\n\nMöchtest du diese Werte wirklich mit „${neu}“ überschreiben?`,{ok:"Überschreiben"}
   );
 }
 function confirmClearDay(key){
   const d=dateFromKey(key);
   if(!state.records[key]){
     if(bwHolidayName(key)){
-      alert("Für diesen Tag ist kein manueller Eintrag gespeichert. Der gesetzliche Feiertag bleibt automatisch sichtbar.");
+      toast("Kein manueller Eintrag – der Feiertag bleibt automatisch sichtbar");
     }else{
       toast("Für diesen Tag gibt es keinen gespeicherten Eintrag");
     }
-    return false;
+    return Promise.resolve(false);
   }
   const old=describeExistingDay(key) || "gespeicherter Eintrag";
-  return confirm(
-    `Möchtest du den Eintrag für ${weekdayName(d,false)}, ${pad(d.getDate())}.${pad(d.getMonth()+1)}. wirklich vollständig zurücksetzen?\n\n${old}\n\nDanach steht der Tag wieder auf „Kein Eintrag“.`
+  return askConfirm(
+    `Möchtest du den Eintrag für ${weekdayName(d,false)}, ${pad(d.getDate())}.${pad(d.getMonth()+1)}. wirklich vollständig zurücksetzen?\n\n${old}\n\nDanach steht der Tag wieder auf „Kein Eintrag“.`,{ok:"Zurücksetzen",danger:true}
   );
 }
 
@@ -2273,11 +2291,11 @@ function bookLiveQuickPause(min){
   const workStart=minutesFromTime(rec.start);
 
   if(endMin>=1440){
-    alert("Eine Schnellpause über Mitternacht wird aktuell nicht unterstützt.");
+    notify("Eine Schnellpause über Mitternacht wird aktuell nicht unterstützt.");
     return;
   }
   if(workStart!=null && startMin<workStart){
-    alert("Die Schnellpause kann nicht vor deinem Arbeitsbeginn starten.");
+    notify("Die Schnellpause kann nicht vor deinem Arbeitsbeginn starten.");
     return;
   }
 
@@ -2287,7 +2305,7 @@ function bookLiveQuickPause(min){
     return a!=null && b!=null && rangesOverlap(startMin,endMin,a,b);
   });
   if(conflicts){
-    alert("Diese Schnellpause würde sich mit einer bereits erfassten Pause überschneiden.");
+    notify("Diese Schnellpause würde sich mit einer bereits erfassten Pause überschneiden.");
     return;
   }
 
@@ -2310,7 +2328,7 @@ function toggleMonthSelectedDate(key){
   else monthSelectedDates.add(key);
   render();
 }
-function applyMonthSelection(status){
+async function applyMonthSelection(status){
   const keys=[...monthSelectedDates].sort();
   if(!keys.length){
     toast("Bitte zuerst Tage auswählen");
@@ -2323,7 +2341,7 @@ function applyMonthSelection(status){
       toast("Kein manueller Eintrag in der Auswahl");
       return;
     }
-    if(!confirm(`${manual.length} gespeicherte${manual.length===1?"r Eintrag":" Einträge"} wirklich auf „Kein Eintrag“ zurücksetzen?`)) return;
+    if(!(await askConfirm(`${manual.length} gespeicherte${manual.length===1?"r Eintrag":" Einträge"} wirklich auf „Kein Eintrag“ zurücksetzen?`,{ok:"Zurücksetzen",danger:true}))) return;
     manual.forEach(k=>delete state.records[k]);
     save();
     monthSelectedDates.clear();
@@ -2340,7 +2358,7 @@ function applyMonthSelection(status){
       existing.length?`${existing.length} vorhandene Einträge`:"",
       holidays.length?`${holidays.length} automatische Feiertage`:""
     ].filter(Boolean).join(" und ");
-    if(!confirm(`${details} werden mit „${STATUS[status].label}“ überschrieben. Fortfahren?`)) return;
+    if(!(await askConfirm(`${details} werden mit „${STATUS[status].label}“ überschrieben. Fortfahren?`,{ok:"Überschreiben"}))) return;
   }
 
   keys.forEach(key=>{
@@ -2432,14 +2450,14 @@ function bindDynamic(){
     panel.classList.toggle("open");
   }));
 
-  document.querySelectorAll("[data-set-status]").forEach(el=>el.addEventListener("click",()=>{
+  document.querySelectorAll("[data-set-status]").forEach(el=>el.addEventListener("click",async()=>{
     const [key,status]=el.dataset.setStatus.split("|");
     const current=effectiveStatus(key);
     if(current===status){
       toast(`${STATUS[status].label} ist bereits ausgewählt`);
       return;
     }
-    if(!confirmOverwriteDay(key,status)) return;
+    if(!(await confirmOverwriteDay(key,status))) return;
 
     const rec=ensureRecord(key);
     rec.status=status;
@@ -2454,9 +2472,9 @@ function bindDynamic(){
     toast(`${STATUS[status].label} gespeichert`);
   }));
 
-  document.querySelectorAll("[data-clear-day]").forEach(el=>el.addEventListener("click",()=>{
+  document.querySelectorAll("[data-clear-day]").forEach(el=>el.addEventListener("click",async()=>{
     const key=el.dataset.clearDay;
-    if(!confirmClearDay(key)) return;
+    if(!(await confirmClearDay(key))) return;
     delete state.records[key];
     save();
     render();
@@ -2929,7 +2947,7 @@ $("toggleLivePauseBtn").addEventListener("click",()=>{
   render();
   toast(message);
 });
-$("editForm").addEventListener("submit",e=>{
+$("editForm").addEventListener("submit",async e=>{
   e.preventDefault();
   const status=$("editStatus").value;
 
@@ -2943,7 +2961,7 @@ $("editForm").addEventListener("submit",e=>{
       );
       return;
     }
-    if(!confirmClearDay(editDateKey)) return;
+    if(!(await confirmClearDay(editDateKey))) return;
     delete state.records[editDateKey];
     save();
     $("editDialog").close();
@@ -3143,7 +3161,7 @@ function updateBulkPreview(){
   `;
 }
 
-$("saveBulkBtn").addEventListener("click",()=>{
+$("saveBulkBtn").addEventListener("click",async()=>{
   const info=bulkDatesInfo();
   if(!info.valid) return;
 
@@ -3158,7 +3176,7 @@ $("saveBulkBtn").addEventListener("click",()=>{
 
   if(overwrite && info.existing){
     const label=bulkType==="work"?"Arbeit als Sammelbuchung":STATUS[bulkType].label;
-    if(!confirm(`${info.existing} vorhandene Einträge werden mit „${label}“ überschrieben. Fortfahren?`)) return;
+    if(!(await askConfirm(`${info.existing} vorhandene Einträge werden mit „${label}“ überschrieben. Fortfahren?`,{ok:"Überschreiben"}))) return;
   }
 
   let saved=0;
@@ -3361,8 +3379,8 @@ $("importInput").addEventListener("change",async e=>{
     save();$("settingsDialog").close();render();toast("Backup importiert");
   }catch{toast("Import fehlgeschlagen")}
 });
-$("resetAllBtn").addEventListener("click",()=>{
-  if(confirm("Wirklich alle gespeicherten Arbeitszeitdaten löschen?")){
+$("resetAllBtn").addEventListener("click",async()=>{
+  if(await askConfirm("Wirklich alle gespeicherten Arbeitszeitdaten löschen? Das lässt sich nicht rückgängig machen.",{ok:"Alles löschen",danger:true})){
     state={settings:{...freshDefaultSettings(),demoSeed:false},records:{},weekPlans:{}};
     save();$("settingsDialog").close();render();toast("Alle Daten gelöscht");
   }

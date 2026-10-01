@@ -2622,3 +2622,8 @@ button:disabled{cursor:default;opacity:.5}
 .year-day.pickable.picked{background:var(--lime)!important;color:#18210a!important;box-shadow:0 0 0 2px var(--text)}
 .sticky-selection{position:sticky;bottom:calc(78px + env(safe-area-inset-bottom));z-index:8;box-shadow:0 -8px 24px rgba(0,0,0,.35)}
 .demo-banner[hidden]{display:none}
+
+/* V37 eigene Bestätigung */
+.confirm-dialog{max-width:360px}
+.confirm-dialog p{margin:4px 0 16px;font-size:var(--fs-m);line-height:1.45;white-space:pre-line;color:var(--text)}
+.confirm-dialog .dialog-actions button[hidden]{display:none}
