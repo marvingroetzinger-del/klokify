@@ -2525,3 +2525,29 @@ button:disabled{cursor:default;opacity:.5}
 .pixel-meter{bottom:calc(72px + env(safe-area-inset-bottom));font-size:11px}
 .h-vac-t b,.h-vac-t span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .h-vac.on .h-vac-n{color:var(--orange)}
+
+/* Brückentag-Tipp (Homescreen) */
+.h-tip{display:flex;align-items:center;gap:10px;padding:10px 10px 10px 14px;border-radius:16px;background:rgba(182,226,76,.10);border:1px solid rgba(182,226,76,.28)}
+.h-tip-main{flex:1;min-width:0;display:flex;flex-direction:column}
+.h-tip-main b{font-size:var(--fs-m);color:var(--lime)}
+.h-tip-main span{font-size:var(--fs-s);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.h-tip-actions{display:flex;align-items:center;gap:4px}
+.h-tip-btn{height:40px;padding:0 14px;border:0;border-radius:10px;background:var(--lime);color:#18210a;font:700 var(--fs-s)/1 var(--font-ui)}
+.h-tip-x{width:36px;height:40px;border:0;background:none;color:var(--muted);font-size:22px}
+
+/* Gute Gelegenheiten (Jahresansicht) */
+.h-bridge{padding:14px;display:flex;flex-direction:column;gap:4px;background:var(--panel)}
+.h-bridge-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px}
+.h-bridge-head small{font-size:var(--fs-s);color:var(--muted)}
+.h-bridge-row{display:flex;align-items:center;gap:12px;padding:10px 0;border:0;border-top:1px solid var(--line);background:none;color:var(--text);text-align:left;width:100%}
+.h-bridge-ratio{flex:none;width:64px;display:flex;flex-direction:column;align-items:flex-start}
+.h-bridge-ratio b{font:700 var(--fs-l)/1 var(--font-num);color:var(--lime);white-space:nowrap}
+.h-bridge-ratio small{font-size:var(--fs-s);color:var(--muted)}
+.h-bridge-txt{flex:1;min-width:0;display:flex;flex-direction:column}
+.h-bridge-txt b{font-size:var(--fs-m)}
+.h-bridge-txt span{font-size:var(--fs-s);color:var(--muted)}
+.h-bridge-go{color:var(--muted);font-size:var(--fs-l)}
+.content>*{min-width:0}
+.h-bridge-ratio{width:76px}
+.h-tip-main b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.h-tip-btn{padding:0 12px}

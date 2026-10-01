@@ -2531,6 +2531,32 @@ button:disabled{cursor:default;opacity:.5}
 .h-vac-t b,.h-vac-t span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .h-vac.on .h-vac-n{color:var(--orange)}
 
+/* Brückentag-Tipp (Homescreen) */
+.h-tip{display:flex;align-items:center;gap:10px;padding:10px 10px 10px 14px;border-radius:16px;background:rgba(182,226,76,.10);border:1px solid rgba(182,226,76,.28)}
+.h-tip-main{flex:1;min-width:0;display:flex;flex-direction:column}
+.h-tip-main b{font-size:var(--fs-m);color:var(--lime)}
+.h-tip-main span{font-size:var(--fs-s);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.h-tip-actions{display:flex;align-items:center;gap:4px}
+.h-tip-btn{height:40px;padding:0 14px;border:0;border-radius:10px;background:var(--lime);color:#18210a;font:700 var(--fs-s)/1 var(--font-ui)}
+.h-tip-x{width:36px;height:40px;border:0;background:none;color:var(--muted);font-size:22px}
+
+/* Gute Gelegenheiten (Jahresansicht) */
+.h-bridge{padding:14px;display:flex;flex-direction:column;gap:4px;background:var(--panel)}
+.h-bridge-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px}
+.h-bridge-head small{font-size:var(--fs-s);color:var(--muted)}
+.h-bridge-row{display:flex;align-items:center;gap:12px;padding:10px 0;border:0;border-top:1px solid var(--line);background:none;color:var(--text);text-align:left;width:100%}
+.h-bridge-ratio{flex:none;width:64px;display:flex;flex-direction:column;align-items:flex-start}
+.h-bridge-ratio b{font:700 var(--fs-l)/1 var(--font-num);color:var(--lime);white-space:nowrap}
+.h-bridge-ratio small{font-size:var(--fs-s);color:var(--muted)}
+.h-bridge-txt{flex:1;min-width:0;display:flex;flex-direction:column}
+.h-bridge-txt b{font-size:var(--fs-m)}
+.h-bridge-txt span{font-size:var(--fs-s);color:var(--muted)}
+.h-bridge-go{color:var(--muted);font-size:var(--fs-l)}
+.content>*{min-width:0}
+.h-bridge-ratio{width:76px}
+.h-tip-main b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.h-tip-btn{padding:0 12px}
+
 </style>
 
   <div class="app-shell">
@@ -4330,10 +4356,120 @@ function hVacation(){
 
   // Kein Urlaub geplant: nächster Feiertag als Ersatz
   const h=nextHoliday();
-  return `<button type="button" class="h-vac" id="openBulkBtn"><span class="h-vac-n${h?"":" none"}">${h?`${h.days}<small> ${unit(h.days)}</small>`:"–"}</span><span class="h-vac-t"><b>${h?`bis ${escapeHtml(h.name)}`:"Kein Urlaub eingetragen"}</b><span>Urlaub eintragen ›</span></span>${restHTML}</button>`;
+  return `<button type="button" class="h-vac" id="openBulkBtn"><span class="h-vac-n${h?"":" none"}">${h?`${h.days}<small> ${unit(h.days)}</small>`:"–"}</span><span class="h-vac-t"><b>${h?`bis ${escapeHtml(bridgeName(h.name))}`:"Kein Urlaub eingetragen"}</b><span>Urlaub eintragen ›</span></span>${restHTML}</button>`;
+}
+
+/* ── V37 Brückentag-Finder ──
+   Sucht Zeiträume, in denen wenige Urlaubstage dank Feiertagen viele freie Tage
+   am Stück ergeben. Gerechnet wird mit den echten Arbeitstagen (Soll > 0) und
+   bereits eingetragenen freien Tagen. Freie Tage = Wochenende/Soll 0, Feiertag,
+   Urlaub, Sonderurlaub, FZA, Frei. */
+function bridgeDayInfo(key){
+  const st=effectiveStatus(key);
+  const work=(st==="work"||st==="empty"||st==="sick")&&targetForDate(key)>0&&!state.records[key]?.start;
+  return {key,work,holiday:st==="holiday"?bwHolidayName(key):null};
+}
+function bridgeOpportunities(fromKey,days=430){
+  const list=[];
+  const d=dateFromKey(fromKey);
+  for(let i=0;i<days;i++){list.push(bridgeDayInfo(localDateKey(d)));d.setDate(d.getDate()+1);}
+  // Läufe bilden: abwechselnd frei / Arbeit
+  const runs=[];
+  for(const x of list){
+    const last=runs[runs.length-1];
+    if(last&&last.work===x.work){last.days.push(x);}
+    else runs.push({work:x.work,days:[x]});
+  }
+  const out=[];
+  for(let a=0;a<runs.length;a++){
+    if(!runs[a].work) continue;
+    let vac=0,vacDays=[];
+    for(let b=a;b<runs.length;b++){
+      if(runs[b].work){
+        vac+=runs[b].days.length;vacDays=vacDays.concat(runs[b].days);
+        if(vac>10) break;
+        const before=a>0?runs[a-1]:null,after=runs[b+1]||null;
+        if(!before||!after) continue; // nur vollständig bekannte Zeiträume
+        const span=[...before.days];
+        for(let k=a;k<=b+1;k++) span.push(...runs[k].days);
+        const holidays=span.filter(x=>x.holiday&&!x.work);
+        const workdayHolidays=holidays.filter(x=>{const t=dateFromKey(x.key).getDay();return t>0&&t<6;});
+        if(!workdayHolidays.length) continue;
+        const total=span.length;
+        const ratio=total/vac;
+        if(ratio<2&&!(workdayHolidays.length>=2&&ratio>=1.75)) continue;
+        out.push({
+          from:span[0].key,to:span[span.length-1].key,
+          vacFrom:vacDays[0].key,vacTo:vacDays[vacDays.length-1].key,
+          vac,total,ratio,
+          names:[...new Set(workdayHolidays.map(x=>x.holiday))],
+          id:workdayHolidays.map(x=>x.key).join("+")+"/"+vac
+        });
+      }
+    }
+  }
+  // je Feiertagsgruppe nur die beste Variante
+  const best={};
+  for(const o of out){
+    const g=o.id.split("/")[0];
+    const cur=best[g];
+    if(!cur||o.ratio>cur.ratio||(o.ratio===cur.ratio&&o.total>cur.total)) best[g]=o;
+  }
+  return Object.values(best).sort((x,y)=>x.vacFrom<y.vacFrom?-1:1);
+}
+const BRIDGE_SHORT_NAMES={"1. Weihnachtsfeiertag":"Weihnachten","2. Weihnachtsfeiertag":"Weihnachten","Christi Himmelfahrt":"Himmelfahrt","Heilige Drei Könige":"Hl. 3 Könige","Tag der Deutschen Einheit":"Einheit"};
+function bridgeName(n){return BRIDGE_SHORT_NAMES[n]||n;}
+function bridgeDate(key){const d=dateFromKey(key);return `${pad(d.getDate())}.${pad(d.getMonth()+1)}.`;}
+function bridgeShort(key){const d=dateFromKey(key);return `${weekdayName(d)} ${pad(d.getDate())}.${pad(d.getMonth()+1)}.`;}
+function bridgeVacText(o){return o.vac===1?bridgeShort(o.vacFrom):`${bridgeShort(o.vacFrom)} – ${bridgeShort(o.vacTo)}`;}
+function bridgeTip(){
+  const todayK=localDateKey(new Date());
+  const tomorrow=localDateKey(new Date(Date.now()+86400000));
+  const dismissed=state.settings.dismissedBridgeTips||[];
+  const limit=localDateKey(new Date(Date.now()+90*86400000));
+  const opts=bridgeOpportunities(tomorrow,110).filter(o=>o.vacFrom>todayK&&o.vacFrom<=limit&&!dismissed.includes(o.id));
+  if(!opts.length) return null;
+  // beste Gelegenheit der nächsten 3 Monate (Verhältnis), bei Gleichstand die frühere
+  return opts.sort((x,y)=>y.ratio-x.ratio||(x.vacFrom<y.vacFrom?-1:1))[0];
+}
+function hBridgeTip(){
+  if(selectedDate!==localDateKey(new Date())) return "";
+  const o=bridgeTip();
+  if(!o) return "";
+  return `<section class="h-tip">
+    <div class="h-tip-main"><b>${o.vac} → ${o.total} Tage frei</b><span>Urlaub ${bridgeDate(o.vacFrom)}${o.vac>1?`–${bridgeDate(o.vacTo)}`:""} · ${escapeHtml(o.names.map(bridgeName).join(" + "))}</span></div>
+    <div class="h-tip-actions"><button type="button" class="h-tip-btn" data-bridge-book="${o.vacFrom}|${o.vacTo}">Eintragen</button><button type="button" class="h-tip-x" data-bridge-dismiss="${o.id}" aria-label="Tipp ausblenden">×</button></div>
+  </section>`;
+}
+function bridgeYearHTML(year){
+  const todayK=localDateKey(new Date());
+  const startK=year===new Date().getFullYear()?localDateKey(new Date(Date.now()+86400000)):`${year}-01-01`;
+  if(`${year}-12-31`<todayK) return "";
+  const opts=bridgeOpportunities(localDateKey(new Date(dateFromKey(startK).getTime()-10*86400000)),400)
+    .filter(o=>o.vacFrom.startsWith(String(year))&&o.vacFrom>todayK)
+    .sort((x,y)=>x.vacFrom<y.vacFrom?-1:1);
+  if(!opts.length) return "";
+  return `<section class="h-bridge card">
+    <div class="h-bridge-head"><span class="h-kicker">Gute Gelegenheiten ${year}</span><small>Brückentage · BW</small></div>
+    ${opts.map(o=>`<button type="button" class="h-bridge-row" data-bridge-book="${o.vacFrom}|${o.vacTo}">
+      <span class="h-bridge-ratio"><b>${o.vac} → ${o.total}</b><small>Tage</small></span>
+      <span class="h-bridge-txt"><b>${escapeHtml(o.names.join(" + "))}</b><span>Urlaub ${bridgeVacText(o)}</span><span>frei ${bridgeShort(o.from)} – ${bridgeShort(o.to)}</span></span>
+      <span class="h-bridge-go">›</span>
+    </button>`).join("")}
+  </section>`;
+}
+function openBulkVacation(fromKey,toKey){
+  setBulkType("vacation");
+  setBulkDates(dateFromKey(fromKey),dateFromKey(toKey));
+  $("bulkNote").value="";
+  $("bulkSkipWeekends").checked=true;
+  $("bulkSkipHolidays").checked=true;
+  $("bulkOverwrite").checked=false;
+  updateBulkPreview();
+  $("bulkDialog").showModal();
 }
 function hExtras(){
-  return hWeek()+hVacation();
+  return hWeek()+hVacation()+hBridgeTip();
 }
 
 function renderTypedDay(key,status){
@@ -4858,6 +4994,7 @@ function renderYear(){
       <div class="vacation-meta"><span>${used} genommen</span><span>${rest} Rest</span></div>
       <div class="special-note">🌴 Sonderurlaub: <strong>${special}</strong> · ✚ Krank: <strong>${sick}</strong> · ↻ FZA: <strong>${flex}</strong></div>
     </section>
+    ${bridgeYearHTML(year)}
 
     <section class="summary-grid">
       <article class="summary-card card"><span>Ist</span><strong>${formatHours(totalWorked)}</strong></article>
@@ -5093,6 +5230,17 @@ function bindDynamic(){
     currentView=el.dataset.gotoView;
     if(currentView==="year") yearCursor=new Date().getFullYear();
     updateNav();render();window.scrollTo(0,0);
+  }));
+
+  document.querySelectorAll("[data-bridge-book]").forEach(el=>el.addEventListener("click",()=>{
+    const [from,to]=el.dataset.bridgeBook.split("|");
+    openBulkVacation(from,to);
+  }));
+  document.querySelectorAll("[data-bridge-dismiss]").forEach(el=>el.addEventListener("click",()=>{
+    const list=state.settings.dismissedBridgeTips||[];
+    list.push(el.dataset.bridgeDismiss);
+    state.settings.dismissedBridgeTips=list.slice(-40);
+    save();render();toast("Tipp ausgeblendet");
   }));
 
   const plannerBtn=$("openWeekPlannerBtn");
