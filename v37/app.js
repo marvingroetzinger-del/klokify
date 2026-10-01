@@ -1588,6 +1588,22 @@ function hBridgeTip(){
     <button type="button" class="h-tip-x" data-bridge-dismiss="${o.id}" aria-label="Tipp ausblenden">×</button>
   </section>`;
 }
+function bridgeYearOpts(year){
+  const todayK=localDateKey(new Date());
+  const startK=year===new Date().getFullYear()?localDateKey(new Date(Date.now()+86400000)):`${year}-01-01`;
+  return bridgeOpportunities(localDateKey(new Date(dateFromKey(startK).getTime()-10*86400000)),400)
+    .filter(o=>o.vacFrom.startsWith(String(year))&&o.vacFrom>todayK);
+}
+function bridgeOutlookRow(year){
+  const next=bridgeYearOpts(year+1);
+  if(!next.length) return "";
+  const best=Math.max(...next.map(o=>o.total));
+  return `<button type="button" class="h-bridge-row outlook" data-goto-year="${year+1}">
+      <span class="h-bridge-ratio"><b>${year+1}</b><small>Ausblick</small></span>
+      <span class="h-bridge-txt"><b>${next.length} Gelegenheiten</b><span>bis zu ${best} Tage frei am Stück</span></span>
+      <span class="h-bridge-go">›</span>
+    </button>`;
+}
 function bridgeYearHTML(year){
   const todayK=localDateKey(new Date());
   const startK=year===new Date().getFullYear()?localDateKey(new Date(Date.now()+86400000)):`${year}-01-01`;
@@ -1595,7 +1611,8 @@ function bridgeYearHTML(year){
   const opts=bridgeOpportunities(localDateKey(new Date(dateFromKey(startK).getTime()-10*86400000)),400)
     .filter(o=>o.vacFrom.startsWith(String(year))&&o.vacFrom>todayK)
     .sort((x,y)=>x.vacFrom<y.vacFrom?-1:1);
-  if(!opts.length) return "";
+  const outlook=year===new Date().getFullYear()?bridgeOutlookRow(year):"";
+  if(!opts.length&&!outlook) return "";
   return `<section class="h-bridge card">
     <div class="h-bridge-head"><span class="h-kicker">Gute Gelegenheiten ${year}</span><small>Brückentage · BW</small></div>
     ${opts.map(o=>`<button type="button" class="h-bridge-row${bridgeFocus?.id===o.id?" focused":""}" data-bridge-show="${bridgeAttr(o)}">
@@ -1603,6 +1620,7 @@ function bridgeYearHTML(year){
       <span class="h-bridge-txt"><b>${escapeHtml(o.names.map(bridgeName).join(" + "))}</b><span>für <strong>${o.vac} Urlaubstag${o.vac===1?"":"e"}</strong>: ${bridgeDate(o.vacFrom)}${o.vac>1?`–${bridgeDate(o.vacTo)}`:""}</span><span>frei von ${bridgeShort(o.from)} bis ${bridgeShort(o.to)}</span></span>
       <span class="h-bridge-go">›</span>
     </button>`).join("")}
+    ${outlook}
   </section>`;
 }
 function openBulkVacation(fromKey,toKey){
@@ -1732,7 +1750,8 @@ function sheetVacation(){
     <div class="h-sheet-actions two">
       <button type="button" class="h-btn primary" data-sheet-bulk>＋ Urlaub</button>
       <button type="button" class="h-btn ghost" data-sheet-go="year">Jahr ›</button>
-    </div>`);
+    </div>
+    ${now.getMonth()>=8?`<button type="button" class="h-btn ghost" data-sheet-year="${year+1}">Ausblick ${year+1} ›</button>`:""}`);
 }
 const HOME_SHEETS={day:sheetDay,pause:sheetPause,konto:sheetKonto,vacation:sheetVacation};
 function hNote(key){
@@ -2370,6 +2389,7 @@ function renderYear(){
       <button class="month-secondary" id="thisYearBtn" ${year===new Date().getFullYear()?"disabled":""}>Dieses Jahr</button>
     </section>
 
+    ${!monthSelectMode&&!bridgeFocus&&year>new Date().getFullYear()?bridgeYearHTML(year):""}
     <div class="year-calendar-title">
       <h3>12 Monate</h3>
       <span class="year-subtle-label">${monthSelectMode?"Tage antippen zum Auswählen":"Monat antippen zum Öffnen"}</span>
@@ -2396,7 +2416,7 @@ function renderYear(){
       <div class="vacation-meta"><span>${used} genommen</span><span>${rest} Rest</span></div>
       <div class="special-note">🌴 Sonderurlaub: <strong>${special}</strong> · ✚ Krank: <strong>${sick}</strong> · ↻ FZA: <strong>${flex}</strong></div>
     </section>
-    ${bridgeYearHTML(year)}
+    ${year>new Date().getFullYear()&&!bridgeFocus?"":bridgeYearHTML(year)}
 
     <section class="summary-grid">
       <article class="summary-card card"><span>Ist</span><strong>${formatHours(totalWorked)}</strong></article>
@@ -2655,6 +2675,9 @@ function bindDynamic(){
 
   document.querySelectorAll("[data-bridge-show]").forEach(el=>el.addEventListener("click",()=>{
     try{showBridge(JSON.parse(decodeURIComponent(el.dataset.bridgeShow)));}catch{}
+  }));
+  document.querySelectorAll("[data-goto-year]").forEach(el=>el.addEventListener("click",()=>{
+    yearCursor=Number(el.dataset.gotoYear);bridgeFocus=null;currentView="year";updateNav();render();window.scrollTo(0,0);
   }));
   document.querySelectorAll("[data-bridge-clear]").forEach(el=>el.addEventListener("click",()=>{bridgeFocus=null;render();}));
   document.querySelectorAll("[data-bridge-book]").forEach(el=>el.addEventListener("click",()=>{
@@ -3769,6 +3792,7 @@ $("sheetLayer").addEventListener("click",e=>{
   if(!b) return;
   if(b.dataset.sheetEdit){closeSheet();openEdit(b.dataset.sheetEdit);return;}
   if(b.dataset.sheetGo){closeSheet();currentView=b.dataset.sheetGo;weekOffset=0;if(currentView==="year")yearCursor=new Date().getFullYear();if(currentView==="month"){const d=new Date();monthCursor=new Date(d.getFullYear(),d.getMonth(),1);}updateNav();render();window.scrollTo(0,0);return;}
+  if(b.dataset.sheetYear){closeSheet();currentView="year";yearCursor=Number(b.dataset.sheetYear);bridgeFocus=null;updateNav();render();window.scrollTo(0,0);return;}
   if(b.hasAttribute("data-sheet-bulk")){closeSheet();const d=new Date(Date.now()+86400000);openBulkVacation(localDateKey(d),localDateKey(d));return;}
   if(b.hasAttribute("data-sheet-pause")){closeSheet();renderLivePauseDialog();$("pauseDialog").showModal();return;}
   if(b.hasAttribute("data-sheet-settings")){closeSheet();buildSettings();document.querySelectorAll("#settingsDialog details.settings-accordion").forEach((d,i)=>d.open=i===0);$("settingsDialog").showModal();setTimeout(()=>$("kontoStartInput")?.focus(),50);return;}

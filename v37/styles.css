@@ -2762,3 +2762,6 @@ button:disabled{cursor:default;opacity:.5}
 .year-month-card.bf-month .year-days{gap:4px}
 .year-month-card.bf-month .year-day{font:600 14px/1 var(--font-num)!important;border-radius:6px!important;aspect-ratio:auto;min-height:32px}
 .year-month-card.bf-month .year-weekdays span{font-size:12px!important;font-weight:600}
+.h-bridge-row.outlook{background:rgba(125,184,242,.08);margin:4px -14px -14px;padding:12px 14px;border-radius:0 0 16px 16px}
+.h-bridge-row.outlook .h-bridge-ratio b{color:var(--blue)}
+.h-bridge-row.outlook .h-bridge-ratio small{color:var(--blue)}
