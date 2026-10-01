@@ -2835,3 +2835,7 @@ button:disabled{cursor:default;opacity:.5}
 .wp-take{border:0;border-radius:8px;padding:8px 12px;background:rgba(182,226,76,.16);color:var(--lime);font:700 var(--fs-s)/1 var(--font-ui)}
 .h-day .db.pos{color:var(--lime)} .h-day .db.neg{color:var(--danger)}
 .wp-exact b{white-space:nowrap}
+.h-week-fr{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 4px 2px;border-top:1px solid var(--line);font-size:var(--fs-s);color:var(--muted)}
+.h-week-fr b{color:var(--text);font:700 var(--fs-m)/1 var(--font-num)}
+.h-bridge-hidden{font-style:normal;font-size:var(--fs-s);color:var(--orange)}
+.h-bf-restore{border:0;background:none;color:var(--lime);font:600 12px/1.2 var(--font-ui);padding:2px 0;white-space:nowrap}

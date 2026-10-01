@@ -709,6 +709,13 @@ function plannerStatusText(row){
   if(row.type==="missing") return "unvollständig";
   return row.end ? `bis ${row.end}` : formatCompact(row.work);
 }
+function planExactFriday(result){
+  const fr=result.rows.find(r=>r.key===result.fridayKey);
+  if(!fr||!fr.end) return null;
+  const need=Math.max(0,fr.work-result.gap);
+  const frStart=minutesFromTime(plannerStartForKey(result.fridayKey))??395;
+  return {fr,time:timeFromMinutes(frStart+need+(need>360?Math.max(0,Number(state.settings.plannedPauseMin)||0):0))};
+}
 function renderWeekPlanPreview(plan){
   const result=calculateWeekPlan(plan);
   const warningHTML=result.warnings.length?`<div class="planner-warning">${result.warnings.map(x=>`<div>! ${x}</div>`).join("")}</div>`:"";
@@ -718,9 +725,7 @@ function renderWeekPlanPreview(plan){
   let calc="";
   if(fr&&fr.end){
     const before=result.gap-fr.delta;
-    const need=Math.max(0,fr.work-result.gap);
-    const frStart=minutesFromTime(plannerStartForKey(result.fridayKey))??395;
-    const exactMin=frStart+need+(need>360?Math.max(0,Number(state.settings.plannedPauseMin)||0):0);
+    const exactMin=minutesFromTime(planExactFriday(result).time);
     calc=`<div class="wp-calc"><span>Mo–Do <b class="${before>=0?"pos":"neg"}">${hSigned(before)}</b></span><span>Fr <b class="${fr.delta>=0?"pos":"neg"}">${hSigned(fr.delta)}</b></span><span>= Woche <b class="${result.gap>=0?"pos":"neg"}">${hSigned(result.gap)}</b></span></div>
     ${result.gap!==0?`<div class="wp-exact"><span>Genau Wochenziel: <b>bis ${timeFromMinutes(exactMin)}</b></span><button type="button" class="wp-take" data-take-friday="${timeFromMinutes(exactMin)}">übernehmen</button></div>`:""}`;
   }
@@ -1381,6 +1386,14 @@ function hWeek(){
   return `<section class="h-week">
     <button type="button" class="h-week-head" data-sheet="konto" aria-label="Zeitkonto öffnen"><span><span class="h-kicker">KW ${isoWeekNumber(sel)}</span><b class="${bal>=0?"pos":"neg"}">${hSigned(bal)}</b></span>${homeOpt("konto")?`<span class="h-konto"><small>Konto</small><b class="${kontoBalance()>=0?"pos":"neg"}">${hSigned(kontoBalance())} h</b><i>›</i></span>`:`<span class="h-konto"><small>${sub}</small><i>›</i></span>`}</button>
     <div class="h-days">${cells.join("")}</div>
+    ${(()=>{
+      if(!plan) return "";
+      const r=calculateWeekPlan(plan);
+      if(r.gap===0) return "";
+      const ex=planExactFriday(r);
+      if(!ex) return "";
+      return `<div class="h-week-fr"><span>Für ±0: <b>Fr bis ${ex.time}</b></span><button type="button" class="wp-take" data-plan-take="${ex.time}">übernehmen</button></div>`;
+    })()}
   </section>`;
 }
 
@@ -1543,6 +1556,7 @@ function bridgeBannerHTML(){
       <span class="h-bf-legend"><i class="lg-vac"></i>Urlaub nehmen <i class="lg-free"></i>frei</span></div>
     <div class="h-bf-actions">
       <button type="button" class="h-tip-btn" data-bridge-book="${o.vacFrom}|${o.vacTo}">Eintragen</button>
+      ${(state.settings.dismissedBridgeTips||[]).includes(o.id)?`<button type="button" class="h-bf-restore" data-bridge-restore="${o.id}">Wieder auf Startseite</button>`:""}
       <button type="button" class="h-tip-x" data-bridge-clear aria-label="Hervorhebung schließen">×</button>
     </div>
   </section>`;
@@ -1569,7 +1583,7 @@ function hBridgeTip(){
       <span class="h-tip-n">${o.total}<small>Tage frei</small></span>
       <span class="h-tip-main"><b>für ${vt}</b><span>${bridgeDate(o.vacFrom)}${o.vac>1?`–${bridgeDate(o.vacTo)}`:""} · ${escapeHtml(o.names.map(bridgeName).join(" + "))}</span><em>Im Kalender ansehen ›</em></span>
     </button>
-    <button type="button" class="h-tip-x" data-bridge-dismiss="${o.id}" aria-label="Tipp ausblenden">×</button>
+    <button type="button" class="h-tip-x" data-bridge-dismiss="${o.id}" data-from="${o.from}" data-to="${o.to}" aria-label="Tipp ausblenden">×</button>
   </section>`;
 }
 function bridgeYearOpts(year){
@@ -1601,7 +1615,7 @@ function bridgeYearHTML(year){
     <div class="h-bridge-head"><span class="h-kicker">Gute Gelegenheiten ${year}</span><small>Brückentage · BW</small></div>
     ${opts.map(o=>`<button type="button" class="h-bridge-row${bridgeFocus?.id===o.id?" focused":""}" data-bridge-show="${bridgeAttr(o)}">
       <span class="h-bridge-ratio"><b>${o.total}</b><small>Tage frei</small></span>
-      <span class="h-bridge-txt"><b>${escapeHtml(o.names.map(bridgeName).join(" + "))}</b><span>für <strong>${o.vac} Urlaubstag${o.vac===1?"":"e"}</strong>: ${bridgeDate(o.vacFrom)}${o.vac>1?`–${bridgeDate(o.vacTo)}`:""}</span><span>frei von ${bridgeShort(o.from)} bis ${bridgeShort(o.to)}</span></span>
+      <span class="h-bridge-txt"><b>${escapeHtml(o.names.map(bridgeName).join(" + "))}</b><span>für <strong>${o.vac} Urlaubstag${o.vac===1?"":"e"}</strong>: ${bridgeDate(o.vacFrom)}${o.vac>1?`–${bridgeDate(o.vacTo)}`:""}</span><span>frei von ${bridgeShort(o.from)} bis ${bridgeShort(o.to)}</span>${(state.settings.dismissedBridgeTips||[]).includes(o.id)?`<em class="h-bridge-hidden">auf Startseite ausgeblendet</em>`:""}</span>
       <span class="h-bridge-go">›</span>
     </button>`).join("")}
     ${outlook}
@@ -2663,16 +2677,40 @@ function bindDynamic(){
   document.querySelectorAll("[data-goto-year]").forEach(el=>el.addEventListener("click",()=>{
     yearCursor=Number(el.dataset.gotoYear);bridgeFocus=null;currentView="year";updateNav();render();window.scrollTo(0,0);
   }));
+  document.querySelectorAll("[data-bridge-restore]").forEach(el=>el.addEventListener("click",()=>{
+    state.settings.dismissedBridgeTips=(state.settings.dismissedBridgeTips||[]).filter(x=>x!==el.dataset.bridgeRestore);
+    save();render();toast("Tipp wird wieder auf der Startseite gezeigt");
+  }));
+  document.querySelectorAll("[data-plan-take]").forEach(el=>el.addEventListener("click",e=>{
+    e.stopPropagation();
+    const key=currentPlannerWeekKey(),plan=state.weekPlans?.[key];
+    if(!plan) return;
+    const before=plan.fridayEnd;
+    plan.fridayEnd=el.dataset.planTake;
+    const fk=currentPlannerFridayKey();
+    plan.fridayPauseMin=plannerRecommendedPause(fk,plan.fridayEnd);
+    save();render();
+    toast(`Freitag-Plan: bis ${plan.fridayEnd}`,{label:"Rückgängig",run:()=>{plan.fridayEnd=before;save();render();}});
+  }));
   document.querySelectorAll("[data-bridge-clear]").forEach(el=>el.addEventListener("click",()=>{bridgeFocus=null;render();}));
   document.querySelectorAll("[data-bridge-book]").forEach(el=>el.addEventListener("click",()=>{
     const [from,to]=el.dataset.bridgeBook.split("|");
     openBulkVacation(from,to);
   }));
   document.querySelectorAll("[data-bridge-dismiss]").forEach(el=>el.addEventListener("click",()=>{
+    const id=el.dataset.bridgeDismiss,from=el.dataset.from,to=el.dataset.to;
     const list=state.settings.dismissedBridgeTips||[];
-    list.push(el.dataset.bridgeDismiss);
+    // alle Varianten, die sich mit diesem freien Zeitraum überschneiden, mit ausblenden
+    const group=bridgeOpportunities(localDateKey(new Date(dateFromKey(from).getTime()-20*86400000)),60)
+      .filter(o=>o.from<=to&&o.to>=from).map(o=>o.id);
+    const added=[...new Set([id,...group])].filter(x=>!list.includes(x));
+    list.push(...added);
     state.settings.dismissedBridgeTips=list.slice(-40);
-    save();render();toast("Tipp ausgeblendet");
+    save();render();
+    toast("Tipp ausgeblendet · bleibt im Jahr sichtbar",{label:"Rückgängig",run:()=>{
+      state.settings.dismissedBridgeTips=(state.settings.dismissedBridgeTips||[]).filter(x=>!added.includes(x));
+      save();render();
+    }});
   }));
 
   document.querySelectorAll("[data-year-pick]").forEach(el=>el.addEventListener("click",()=>toggleMonthSelectedDate(el.dataset.yearPick)));
