@@ -1547,9 +1547,13 @@ function hBridgeTip(){
   if(selectedDate!==localDateKey(new Date())) return "";
   const o=bridgeTip();
   if(!o) return "";
+  const vt=`${o.vac} Urlaubstag${o.vac===1?"":"e"}`;
   return `<section class="h-tip">
-    <div class="h-tip-main"><b>${o.vac} → ${o.total} Tage frei</b><span>Urlaub ${bridgeDate(o.vacFrom)}${o.vac>1?`–${bridgeDate(o.vacTo)}`:""} · ${escapeHtml(o.names.map(bridgeName).join(" + "))}</span></div>
-    <div class="h-tip-actions"><button type="button" class="h-tip-btn" data-bridge-book="${o.vacFrom}|${o.vacTo}">Eintragen</button><button type="button" class="h-tip-x" data-bridge-dismiss="${o.id}" aria-label="Tipp ausblenden">×</button></div>
+    <button type="button" class="h-tip-body" data-bridge-book="${o.vacFrom}|${o.vacTo}" aria-label="Urlaub eintragen">
+      <span class="h-tip-n">${o.total}<small>Tage frei</small></span>
+      <span class="h-tip-main"><b>für ${vt}</b><span>${bridgeDate(o.vacFrom)}${o.vac>1?`–${bridgeDate(o.vacTo)}`:""} · ${escapeHtml(o.names.map(bridgeName).join(" + "))}</span><em>Antippen zum Eintragen ›</em></span>
+    </button>
+    <button type="button" class="h-tip-x" data-bridge-dismiss="${o.id}" aria-label="Tipp ausblenden">×</button>
   </section>`;
 }
 function bridgeYearHTML(year){
@@ -1563,8 +1567,8 @@ function bridgeYearHTML(year){
   return `<section class="h-bridge card">
     <div class="h-bridge-head"><span class="h-kicker">Gute Gelegenheiten ${year}</span><small>Brückentage · BW</small></div>
     ${opts.map(o=>`<button type="button" class="h-bridge-row" data-bridge-book="${o.vacFrom}|${o.vacTo}">
-      <span class="h-bridge-ratio"><b>${o.vac} → ${o.total}</b><small>Tage</small></span>
-      <span class="h-bridge-txt"><b>${escapeHtml(o.names.join(" + "))}</b><span>Urlaub ${bridgeVacText(o)}</span><span>frei ${bridgeShort(o.from)} – ${bridgeShort(o.to)}</span></span>
+      <span class="h-bridge-ratio"><b>${o.total}</b><small>Tage frei</small></span>
+      <span class="h-bridge-txt"><b>${escapeHtml(o.names.map(bridgeName).join(" + "))}</b><span>für <strong>${o.vac} Urlaubstag${o.vac===1?"":"e"}</strong>: ${bridgeDate(o.vacFrom)}${o.vac>1?`–${bridgeDate(o.vacTo)}`:""}</span><span>frei von ${bridgeShort(o.from)} bis ${bridgeShort(o.to)}</span></span>
       <span class="h-bridge-go">›</span>
     </button>`).join("")}
   </section>`;
