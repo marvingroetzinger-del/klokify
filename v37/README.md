@@ -15,6 +15,8 @@ Woche, Monat, Jahr und Dialoge folgen in eigenen Schritten (Farben sind bereits 
   - Homescreen: Tipp für die beste Gelegenheit der nächsten 3 Monate, Antippen öffnet den Urlaubsdialog vorbelegt, „×“ blendet den Tipp dauerhaft aus.
   - Jahresansicht: Liste „Gute Gelegenheiten“ mit Urlaubs- und Frei-Zeitraum.
 - **Demo-Modus:** Pixel-Anzeige unten rechts antippen (oder Einstellungen → Daten & System → „Demo-Modus öffnen“). Zustände: Vor Beginn, Vergessen zu stempeln, Läuft, Pause läuft, Soll erreicht, 10-h-Grenze naht, Feierabend, Meine Daten (Kopie der echten Einträge). Uhrzeit per Schieber oder ±5/15/60 Min. Alle App-Knöpfe funktionieren; es wird nichts gespeichert. Oranger DEMO-Balken oben, „Beenden“ lädt die echten Daten.
+- **Woche:** Kopf wie im Monat – Pfeile für Woche vor/zurück, darunter „Woche planen“ und „Aktuelle Woche“ (ersetzt den halb verdeckten Knopf „Diese Woche“).
+- **Jahr:** Werkzeugleiste wie im Monat (＋ Zeitraum · Auswählen · Dieses Jahr). Im Auswahlmodus zweispaltig mit großen Tagen; Tage antippen, unten Urlaub/Krank/FZA/Frei/Kein Eintrag zuordnen. Die Zuordnungsleiste bleibt beim Scrollen sichtbar.
 - **Prognose korrigiert:** Nach der ersten echten Pause rechnet der Feierabend mindestens mit der gesetzlichen Pause fürs Tagessoll (§ 4 ArbZG). Vorher zog eine 15-Min-Pause den Feierabend fälschlich nach vorne.
 - **Hinweise ruhiger:** „Pause läuft“ steht im Tagesbereich statt als eigene Karte. 10-h-Grenze als eine Zeile, sobald das Soll erreicht ist.
 - **Kopfzeile:** Datum antippen springt zurück zu heute.

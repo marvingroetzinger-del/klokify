@@ -1830,21 +1830,18 @@ function renderWeek(){
   const isCurrentWeek=localDateKey(monday)===localDateKey(currentMonday);
 
   return `
-    <div class="view-nav week-view-nav">
+    <div class="calendar-head">
       <div>
         <div class="muted small">${dateShortDE(localDateKey(days[0]))}–${dateShortDE(localDateKey(days[6]))}</div>
         <h2>KW ${isoWeekNumber(monday)}</h2>
       </div>
-      <div class="week-nav-actions">
-        <button class="this-week-btn ${isCurrentWeek?"current":""}" id="thisWeekBtn" ${isCurrentWeek?"disabled":""}>
-          Diese Woche
-        </button>
-        <div class="arrows">
-          <button id="prevWeek" aria-label="Vorherige Woche">‹</button>
-          <button id="nextWeek" aria-label="Nächste Woche">›</button>
-        </div>
-      </div>
+      <div class="month-nav"><button id="prevWeek" aria-label="Vorherige Woche">‹</button><button id="nextWeek" aria-label="Nächste Woche">›</button></div>
     </div>
+
+    <section class="month-tools week-tools">
+      <button class="month-secondary" id="openWeekPlannerBtn">Woche planen</button>
+      <button class="month-secondary${isCurrentWeek?" is-current":""}" id="thisWeekBtn" ${isCurrentWeek?"disabled":""}>${isCurrentWeek?"Aktuelle Woche ✓":"Aktuelle Woche"}</button>
+    </section>
 
     <section class="summary-grid">
       <article class="summary-card card"><span>Ist</span><strong>${formatHours(worked)}</strong></article>
@@ -1934,21 +1931,7 @@ function renderMonth(){
   const selectedCalc=recordCalc(selectedDate,selectedDate===localDateKey(new Date()));
   const selectedRec=state.records[selectedDate],sd=dateFromKey(selectedDate);
 
-  const selectionPanel=monthSelectMode ? `
-    <section class="month-selection-panel card">
-      <div class="month-selection-head">
-        <div><strong>${monthSelectedDates.size}</strong><span> Tag${monthSelectedDates.size===1?"":"e"} gewählt</span></div>
-        <button type="button" class="selection-clear" id="clearMonthSelection">Auswahl leeren</button>
-      </div>
-      <div class="month-selection-actions">
-        <button class="vacation" data-month-apply="vacation">🏖 Urlaub</button>
-        <button class="specialLeave" data-month-apply="specialLeave">🌴 Sonderurlaub</button>
-        <button class="sick" data-month-apply="sick">✚ Krank</button>
-        <button class="flex" data-month-apply="flex">↻ FZA</button>
-        <button class="off" data-month-apply="off">○ Frei</button>
-        <button class="clear" data-month-apply="clear">× Kein Eintrag</button>
-      </div>
-    </section>` : "";
+  const selectionPanel=monthSelectMode?selectionPanelHTML():"";
 
   const holidayBlock = state.settings.autoHolidaysBW
     ? `<section class="month-holiday-list card">
@@ -2006,6 +1989,23 @@ function renderMonth(){
   `;
 }
 
+function selectionPanelHTML(){
+  return `
+    <section class="month-selection-panel card sticky-selection">
+      <div class="month-selection-head">
+        <div><strong>${monthSelectedDates.size}</strong><span> Tag${monthSelectedDates.size===1?"":"e"} gewählt</span></div>
+        <button type="button" class="selection-clear" id="clearMonthSelection">Auswahl leeren</button>
+      </div>
+      <div class="month-selection-actions">
+        <button class="vacation" data-month-apply="vacation">🏖 Urlaub</button>
+        <button class="specialLeave" data-month-apply="specialLeave">🌴 Sonderurlaub</button>
+        <button class="sick" data-month-apply="sick">✚ Krank</button>
+        <button class="flex" data-month-apply="flex">↻ FZA</button>
+        <button class="off" data-month-apply="off">○ Frei</button>
+        <button class="clear" data-month-apply="clear">× Kein Eintrag</button>
+      </div>
+    </section>`;
+}
 function yearMonthCalendar(year,month){
   const daysInMonth=new Date(year,month+1,0).getDate();
   const firstOffset=dayIndexMon0(new Date(year,month,1));
@@ -2039,11 +2039,23 @@ function yearMonthCalendar(year,month){
 
     if(today) cls+=" today";
     const title=bwHolidayName(key)||STATUS[status]?.label||"";
-    days+=`<span class="${cls}" title="${escapeHtml(title)}">${day}</span>`;
+    if(monthSelectMode){
+      const picked=monthSelectedDates.has(key);
+      days+=`<button type="button" class="${cls} pickable${picked?" picked":""}" data-year-pick="${key}" title="${escapeHtml(title)}" aria-pressed="${picked}">${day}</button>`;
+    }else{
+      days+=`<span class="${cls}" title="${escapeHtml(title)}">${day}</span>`;
+    }
   }
 
   const isCurrent=year===new Date().getFullYear()&&month===new Date().getMonth();
   const mName=["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"][month];
+  if(monthSelectMode){
+    return `<article class="year-month-card selecting${isCurrent?" current":""}">
+    <div class="year-month-title"><span>${mName}</span></div>
+    <div class="year-weekdays"><span>Mo</span><span>Di</span><span>Mi</span><span>Do</span><span>Fr</span><span>Sa</span><span>So</span></div>
+    <div class="year-days">${days}</div>
+  </article>`;
+  }
   return `<article class="year-month-card${isCurrent?" current":""}" data-open-month="${month}" data-open-year="${year}"
                    role="button" tabindex="0" aria-label="${mName} ${year} öffnen">
     <div class="year-month-title">
@@ -2097,12 +2109,21 @@ function renderYear(){
       </div>
     </div>
 
+    <section class="month-tools">
+      <button class="month-plan-btn" id="openBulkBtn">＋ Zeitraum</button>
+      <button class="month-secondary ${monthSelectMode?"active":""}" id="monthSelectBtn">${monthSelectMode?"Fertig":"Auswählen"}</button>
+      <button class="month-secondary" id="thisYearBtn" ${year===new Date().getFullYear()?"disabled":""}>Dieses Jahr</button>
+    </section>
+
     <div class="year-calendar-title">
       <h3>12 Monate</h3>
-      <span class="year-subtle-label">Monat öffnen</span>
+      <span class="year-subtle-label">${monthSelectMode?"Tage antippen zum Auswählen":"Monat antippen zum Öffnen"}</span>
     </div>
 
-    <section class="year-calendar">${months}</section>
+    <section class="year-calendar${monthSelectMode?" selecting":""}">${months}</section>
+    ${monthSelectMode?selectionPanelHTML():""}
+
+
 
     <section class="year-legend card">
       <span class="legend-item"><i class="legend-dot work"></i>Arbeit</span>
@@ -2367,6 +2388,10 @@ function bindDynamic(){
     state.settings.dismissedBridgeTips=list.slice(-40);
     save();render();toast("Tipp ausgeblendet");
   }));
+
+  document.querySelectorAll("[data-year-pick]").forEach(el=>el.addEventListener("click",()=>toggleMonthSelectedDate(el.dataset.yearPick)));
+  const ty=$("thisYearBtn");
+  if(ty) ty.addEventListener("click",()=>{yearCursor=new Date().getFullYear();render();});
 
   const plannerBtn=$("openWeekPlannerBtn");
   if(plannerBtn) plannerBtn.addEventListener("click",openWeekPlanner);
@@ -3345,6 +3370,7 @@ $("resetAllBtn").addEventListener("click",()=>{
 
 /* ── Navigation ── */
 document.querySelectorAll(".nav-item").forEach(btn=>btn.addEventListener("click",()=>{
+  if(btn.dataset.view!==currentView){monthSelectMode=false;monthSelectedDates.clear();}
   currentView=btn.dataset.view;
   weekOffset=0;
   if(currentView==="month"){

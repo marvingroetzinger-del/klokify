@@ -2605,3 +2605,20 @@ button:disabled{cursor:default;opacity:.5}
 .demo-steps button{padding:10px 2px}
 .demo-steps button:disabled{opacity:.4}
 .demo-help b{color:var(--text)}
+
+/* V37 Woche: Kopf wie Monat */
+.week-tools{grid-template-columns:1fr 1fr}
+.week-tools .is-current{opacity:1;color:var(--lime);border-color:rgba(182,226,76,.35)}
+.month-nav button{width:44px;height:44px;font-size:22px;background:var(--panel);border-color:var(--line)}
+
+/* V37 Jahr: Auswahlmodus (2 Spalten, größere Tage zum Antippen) */
+.year-calendar.selecting{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px}
+.year-month-card.selecting{padding:10px;cursor:default}
+.year-month-card.selecting .year-month-title span{font-size:var(--fs-m);font-weight:700}
+.year-month-card.selecting .year-weekdays span{font-size:11px}
+.year-month-card.selecting .year-days{gap:3px}
+.year-day.pickable{border:0;padding:0;font:600 13px/1 var(--font-num)!important;border-radius:6px!important;min-height:22px;cursor:pointer;color:var(--text)}
+.year-day.pickable.weekend{color:#7d8794}
+.year-day.pickable.picked{background:var(--lime)!important;color:#18210a!important;box-shadow:0 0 0 2px var(--text)}
+.sticky-selection{position:sticky;bottom:calc(78px + env(safe-area-inset-bottom));z-index:8;box-shadow:0 -8px 24px rgba(0,0,0,.35)}
+.demo-banner[hidden]{display:none}
