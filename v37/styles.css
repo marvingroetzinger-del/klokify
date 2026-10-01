@@ -2523,3 +2523,5 @@ button:disabled{cursor:default;opacity:.5}
 /* Toast und Messanzeige oberhalb der Navigation */
 .toast{bottom:calc(84px + env(safe-area-inset-bottom));font-size:var(--fs-m)}
 .pixel-meter{bottom:calc(72px + env(safe-area-inset-bottom));font-size:11px}
+.h-vac-t b,.h-vac-t span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.h-vac.on .h-vac-n{color:var(--orange)}

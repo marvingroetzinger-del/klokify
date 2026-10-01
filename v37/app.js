@@ -1394,34 +1394,80 @@ function hWeek(){
   </section>`;
 }
 
-function nextVacation(){
-  const todayK=localDateKey(new Date());
-  const keys=Object.keys(state.records).filter(k=>k>todayK&&state.records[k]?.status==="vacation").sort();
-  if(!keys.length) return null;
-  const from=keys[0];
-  let to=from,workdays=0;
-  const d=dateFromKey(from);
-  for(let i=0;i<60;i++){
+function vacationBlockFrom(startKey){
+  // Urlaubsblock ab startKey: Wochenenden, Feiertage und freie Tage dazwischen verbinden ihn
+  let to=startKey,workdays=0;
+  const d=dateFromKey(startKey);
+  for(let i=0;i<90;i++){
     const k=localDateKey(d);
     const st=effectiveStatus(k);
     if(st==="vacation"){to=k;workdays++;}
     else if(!(st==="holiday"||st==="off"||targetForDate(k)===0)) break;
     d.setDate(d.getDate()+1);
   }
+  return {to,workdays};
+}
+function workdaysBetween(fromKey,toKeyExcl){
+  // zählt Arbeitstage (Soll > 0, kein Feiertag/Urlaub/Frei) im Bereich [fromKey, toKeyExcl)
+  let n=0;
+  const d=dateFromKey(fromKey);
+  while(localDateKey(d)<toKeyExcl){
+    const k=localDateKey(d);
+    const st=effectiveStatus(k);
+    if((st==="work"||st==="empty")&&targetForDate(k)>0) n++;
+    d.setDate(d.getDate()+1);
+  }
+  return n;
+}
+function daysUntil(key){
   const t=new Date();t.setHours(0,0,0,0);
-  const days=Math.round((dateFromKey(from)-t)/86400000);
-  return {from,to,workdays,days};
+  return Math.round((dateFromKey(key)-t)/86400000);
+}
+function nextVacation(){
+  const todayK=localDateKey(new Date());
+  const keys=Object.keys(state.records).filter(k=>k>todayK&&state.records[k]?.status==="vacation").sort();
+  if(!keys.length) return null;
+  const from=keys[0];
+  const {to,workdays}=vacationBlockFrom(from);
+  // Heute zählt mit, solange noch kein Feierabend gestempelt ist
+  const tRec=state.records[todayK];
+  const startK=tRec?.end?localDateKey(new Date(Date.now()+86400000)):todayK;
+  return {from,to,workdays,days:daysUntil(from),workLeft:workdaysBetween(startK,from)};
+}
+function nextHoliday(){
+  const d=new Date();
+  for(let i=1;i<=366;i++){
+    d.setDate(d.getDate()+1);
+    const k=localDateKey(d);
+    const name=bwHolidayName(k);
+    if(name&&![0,6].includes(d.getDay())) return {key:k,name,days:daysUntil(k)};
+  }
+  return null;
 }
 function hVacation(){
   const year=new Date().getFullYear();
   const ent=Number(state.settings.vacationEntitlement)||0;
   const rest=ent-statusCountForYear(year,"vacation");
-  const v=nextVacation();
+  const restHTML=`<span class="h-vac-r">Rest<b>${rest} / ${ent}</b></span>`;
   const fmt=k=>{const d=dateFromKey(k);return `${weekdayName(d)} ${pad(d.getDate())}.${pad(d.getMonth()+1)}.`};
-  if(!v){
-    return `<button type="button" class="h-vac" id="openBulkBtn"><span class="h-vac-n none">–</span><span class="h-vac-t"><b>Kein Urlaub eingetragen</b><span>Antippen zum Eintragen</span></span><span class="h-vac-r">Rest<b>${rest} / ${ent}</b></span></button>`;
+  const todayK=localDateKey(new Date());
+  const unit=n=>n===1?"Tag":"Tage";
+
+  // Urlaub läuft gerade
+  if(effectiveStatus(todayK)==="vacation"){
+    const {to}=vacationBlockFrom(todayK);
+    const left=daysUntil(to);
+    return `<button type="button" class="h-vac on" data-goto-view="year"><span class="h-vac-n">${left}<small> ${unit(left)}</small></span><span class="h-vac-t"><b>${left?"Urlaub läuft noch":"Letzter Urlaubstag"}</b><span>Resturlaub ${rest} / ${ent}</span></span><span class="h-vac-r">bis ${weekdayName(dateFromKey(to))}<b>${pad(dateFromKey(to).getDate())}.${pad(dateFromKey(to).getMonth()+1)}.</b></span></button>`;
   }
-  return `<button type="button" class="h-vac" data-goto-view="year"><span class="h-vac-n">${v.days}<small> ${v.days===1?"Tag":"Tage"}</small></span><span class="h-vac-t"><b>bis zum Urlaub</b><span>${fmt(v.from)} – ${fmt(v.to)}</span></span><span class="h-vac-r">Rest<b>${rest} / ${ent}</b></span></button>`;
+
+  const v=nextVacation();
+  if(v){
+    return `<button type="button" class="h-vac" data-goto-view="year"><span class="h-vac-n">${v.days}<small> ${unit(v.days)}</small></span><span class="h-vac-t"><b>bis zum Urlaub</b><span>noch ${v.workLeft} Arbeits${v.workLeft===1?"tag":"tage"}</span></span><span class="h-vac-r">ab ${weekdayName(dateFromKey(v.from))}<b>${pad(dateFromKey(v.from).getDate())}.${pad(dateFromKey(v.from).getMonth()+1)}.</b></span></button>`;
+  }
+
+  // Kein Urlaub geplant: nächster Feiertag als Ersatz
+  const h=nextHoliday();
+  return `<button type="button" class="h-vac" id="openBulkBtn"><span class="h-vac-n${h?"":" none"}">${h?`${h.days}<small> ${unit(h.days)}</small>`:"–"}</span><span class="h-vac-t"><b>${h?`bis ${escapeHtml(h.name)}`:"Kein Urlaub eingetragen"}</b><span>Urlaub eintragen ›</span></span>${restHTML}</button>`;
 }
 function hExtras(){
   return hWeek()+hVacation();
