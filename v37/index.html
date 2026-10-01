@@ -16,6 +16,7 @@
 </head>
 <body>
   <div class="app-shell">
+    <div id="demoBanner" class="demo-banner" hidden></div>
     <header class="topbar h-top">
       <button type="button" class="h-top-date" id="headerDate" aria-label="Zu heute springen"></button>
       <div class="h-top-right">
@@ -314,6 +315,7 @@
             <span>Pixel-Messanzeige unten rechts</span>
             <input type="checkbox" id="pixelMeterToggle">
           </label>
+          <button type="button" class="ghost-btn full" id="openDemoBtn">Demo-Modus öffnen</button>
 
           <label class="toggle-line">
             <span>Demo-Werte beim ersten Start</span>
@@ -337,8 +339,19 @@
     </div>
   </dialog>
 
+  <dialog id="demoDialog" class="dialog demo-dialog">
+    <div class="dialog-head">
+      <div>
+        <h2>Demo-Steuerung</h2>
+        <div class="muted small">Zum Durchspielen, ohne echte Daten zu ändern</div>
+      </div>
+      <button type="button" class="icon-btn mini" data-close="demoDialog" aria-label="Schließen">×</button>
+    </div>
+    <div id="demoBody"></div>
+  </dialog>
+
   <div id="toast" class="toast" role="status"></div>
-  <div id="pixelMeter" class="pixel-meter" aria-hidden="true"></div>
+  <button type="button" id="pixelMeter" class="pixel-meter" aria-label="Pixel-Messanzeige · Demo-Steuerung öffnen"></button>
 
   <script src="app.js?v=37.0"></script>
 </body>

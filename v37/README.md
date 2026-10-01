@@ -14,6 +14,7 @@ Woche, Monat, Jahr und Dialoge folgen in eigenen Schritten (Farben sind bereits 
 - **Brückentag-Finder:** sucht Zeiträume, in denen wenige Urlaubstage dank Feiertagen (BW) viele freie Tage am Stück ergeben, z. B. „4 Tage frei für 1 Urlaubstag“ nach Himmelfahrt. Gerechnet wird mit den eigenen Arbeitstagen und bereits eingetragenem Urlaub; 24.12. und 31.12. zählen als normale Arbeitstage.
   - Homescreen: Tipp für die beste Gelegenheit der nächsten 3 Monate, Antippen öffnet den Urlaubsdialog vorbelegt, „×“ blendet den Tipp dauerhaft aus.
   - Jahresansicht: Liste „Gute Gelegenheiten“ mit Urlaubs- und Frei-Zeitraum.
+- **Demo-Modus:** Pixel-Anzeige unten rechts antippen (oder Einstellungen → Daten & System → „Demo-Modus öffnen“). Zustände: Vor Beginn, Vergessen zu stempeln, Läuft, Pause läuft, Soll erreicht, 10-h-Grenze naht, Feierabend, Meine Daten (Kopie der echten Einträge). Uhrzeit per Schieber oder ±5/15/60 Min. Alle App-Knöpfe funktionieren; es wird nichts gespeichert. Oranger DEMO-Balken oben, „Beenden“ lädt die echten Daten.
 - **Prognose korrigiert:** Nach der ersten echten Pause rechnet der Feierabend mindestens mit der gesetzlichen Pause fürs Tagessoll (§ 4 ArbZG). Vorher zog eine 15-Min-Pause den Feierabend fälschlich nach vorne.
 - **Hinweise ruhiger:** „Pause läuft“ steht im Tagesbereich statt als eigene Karte. 10-h-Grenze als eine Zeile, sobald das Soll erreicht ist.
 - **Kopfzeile:** Datum antippen springt zurück zu heute.

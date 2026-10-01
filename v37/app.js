@@ -70,6 +70,7 @@ function migrateState(){
 }
 
 let state = migrateState();
+let demo = null; // V37 Demo-Modus: {scen, nowMin}
 state.settings = {...freshDefaultSettings(),...(state.settings||{})};
 delete state.settings.durationFormat;
 state.settings.quickPausePresets=Array.isArray(state.settings.quickPausePresets)
@@ -129,6 +130,8 @@ function dateFromKey(key){
   return new Date(y,m-1,d);
 }
 function save(){
+  // Im Demo-Modus wird nie gespeichert – echte Daten bleiben unberührt.
+  if(demo) return true;
   try{
     localStorage.setItem("arbeitszeit-v4",JSON.stringify(state));
     return true;
@@ -155,6 +158,7 @@ function timeFromMinutes(min){
   return `${pad(Math.floor(min/60))}:${pad(min%60)}`;
 }
 function nowTime(){
+  if(demo) return timeFromMinutes(demo.nowMin);
   const d=new Date();
   return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
@@ -1125,7 +1129,8 @@ function idyllicSceneHTML(done=false){
 
 function setHeader(){
   const now=new Date();
-  $("liveTime").textContent=`${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  $("liveTime").textContent=nowTime();
+  renderDemoBanner();
   const d=dateFromKey(selectedDate);
   const isToday=selectedDate===localDateKey(now);
   $("headerDate").innerHTML=`${weekdayName(d,false)}, ${pad(d.getDate())}.${pad(d.getMonth()+1)}.<small>KW ${isoWeekNumber(d)} · ${d.getFullYear()}${isToday?"":" · zurück zu heute"}</small>`;
@@ -2340,7 +2345,7 @@ function updatePixelMeter(){
   el.hidden=!on;
   if(!on) return;
   const vv=window.visualViewport;
-  el.textContent=`${window.innerWidth}×${window.innerHeight}`+(vv?` · vv ${Math.round(vv.width)}×${Math.round(vv.height)}`:"");
+  el.textContent=`${window.innerWidth}×${window.innerHeight}`+(vv?` · vv ${Math.round(vv.width)}×${Math.round(vv.height)}`:"")+" · Demo";
 }
 window.addEventListener("resize",updatePixelMeter);
 window.visualViewport?.addEventListener("resize",updatePixelMeter);
@@ -3370,6 +3375,93 @@ if(state.settings.demoSeed && Object.keys(state.records).length===0){
   }
   save();
 }
+
+/* ── V37 Demo-Modus ──
+   Spielt Tageszustände mit simulierter Uhrzeit durch. Arbeitet auf einer Kopie,
+   save() ist abgeschaltet. „Beenden“ lädt die echten Daten neu. */
+const DEMO_SCENARIOS={
+  pre:{label:"Vor Beginn",now:"06:20",today:null},
+  late:{label:"Vergessen zu stempeln",now:"06:50",today:null},
+  run:{label:"Läuft",now:"11:20",today:{start:"06:35",pauses:[["09:00","09:15"]]}},
+  pause:{label:"Pause läuft",now:"12:15",today:{start:"06:35",pauses:[["09:00","09:15"],["12:00",""]]}},
+  over:{label:"Soll erreicht",now:"15:35",today:{start:"06:35",pauses:[["09:00","09:15"],["12:00","12:20"]]}},
+  limit:{label:"10-h-Grenze naht",now:"16:50",today:{start:"06:35",pauses:[["09:00","09:15"],["12:00","12:20"]]}},
+  done:{label:"Feierabend",now:"15:40",today:{start:"06:35",end:"15:30",pauses:[["09:00","09:15"],["12:00","12:20"]]}},
+  mine:{label:"Meine Daten",now:null,today:"mine"}
+};
+function demoBuildState(scen){
+  const real=migrateState();
+  if(scen==="mine") return JSON.parse(JSON.stringify(real));
+  const st={settings:JSON.parse(JSON.stringify(real.settings||freshDefaultSettings())),records:{},weekPlans:{}};
+  const today=new Date();today.setHours(12,0,0,0);
+  const todayK=localDateKey(today);
+  const mon=mondayOfDate(today);
+  const starts=["06:30","06:35","06:40","06:30"],ends=["15:20","15:20","15:20","15:10"];
+  for(let i=0;i<4;i++){
+    const d=new Date(mon);d.setDate(mon.getDate()+i);
+    const k=localDateKey(d);
+    if(k>=todayK) break;
+    st.records[k]={status:"work",start:starts[i],end:ends[i],pauses:[{start:"09:00",end:"09:15"},{start:"12:00",end:"12:15"}],note:""};
+  }
+  // Urlaub in gut zwei Wochen, damit Countdown und Wochenzeile etwas zeigen
+  const v=new Date(today);v.setDate(v.getDate()+14);
+  while(v.getDay()!==1) v.setDate(v.getDate()+1);
+  for(let i=0;i<5;i++){const d=new Date(v);d.setDate(v.getDate()+i);st.records[localDateKey(d)]={status:"vacation",start:"",end:"",pauses:[],note:""};}
+  const t=DEMO_SCENARIOS[scen].today;
+  if(t) st.records[todayK]={status:"work",start:t.start,end:t.end||"",pauses:t.pauses.map(([a,b])=>({start:a,end:b})),targetHours:8,note:""};
+  return st;
+}
+function demoStart(scen){
+  const def=DEMO_SCENARIOS[scen];
+  const realNow=new Date();
+  demo={scen,nowMin:def.now?minutesFromTime(def.now):realNow.getHours()*60+realNow.getMinutes()};
+  state=demoBuildState(scen);
+  selectedDate=localDateKey(new Date());
+  currentView="day";updateNav();
+  render();renderDemoDialog();
+}
+function demoStop(){
+  demo=null;
+  state=migrateState();
+  selectedDate=localDateKey(new Date());
+  render();
+  if($("demoDialog").open) $("demoDialog").close();
+  toast("Demo beendet – echte Daten geladen");
+}
+function renderDemoBanner(){
+  const el=$("demoBanner");
+  if(!el) return;
+  el.hidden=!demo;
+  if(!demo) return;
+  el.innerHTML=`<span><b>DEMO</b> · ${timeFromMinutes(demo.nowMin)} simuliert · nichts wird gespeichert</span><button type="button" id="demoBannerOpen">Steuerung</button><button type="button" id="demoBannerStop">Beenden</button>`;
+  $("demoBannerOpen").onclick=openDemoDialog;
+  $("demoBannerStop").onclick=demoStop;
+}
+function renderDemoDialog(){
+  const body=$("demoBody");
+  if(!body) return;
+  const now=demo?demo.nowMin:(new Date().getHours()*60+new Date().getMinutes());
+  body.innerHTML=`
+    <p class="demo-help">Zustand wählen, dann mit dem Schieber die Uhrzeit verstellen. Die App-Knöpfe (Kommen, Pause, Feierabend, Ändern) funktionieren normal. Deine echten Einträge bleiben unberührt.</p>
+    <div class="demo-chips">${Object.entries(DEMO_SCENARIOS).map(([k,v])=>`<button type="button" data-demo-scen="${k}" aria-pressed="${demo?.scen===k}">${v.label}</button>`).join("")}</div>
+    ${demo?"":`<p class="demo-help"><b>Erst einen Zustand wählen</b>, dann ist die Uhrzeit verstellbar. „Meine Daten“ nimmt deine echten Einträge (als Kopie).</p>`}
+    <label class="demo-time" for="demoTime"><span>Uhrzeit</span><b id="demoTimeOut">${timeFromMinutes(now)}</b></label>
+    <input type="range" id="demoTime" min="300" max="1200" step="5" value="${now}" ${demo?"":"disabled"}>
+    <div class="demo-steps">${[-60,-15,-5,5,15,60].map(m=>`<button type="button" data-demo-step="${m}" ${demo?"":"disabled"}>${m>0?"+":"−"}${Math.abs(m)>=60?Math.abs(m)/60+" h":Math.abs(m)}</button>`).join("")}</div>
+    ${demo?`<button type="button" class="danger-ghost full" id="demoStopBtn">Demo beenden</button>`:""}`;
+  body.querySelectorAll("[data-demo-scen]").forEach(b=>b.onclick=()=>demoStart(b.dataset.demoScen));
+  const r=$("demoTime");
+  if(r) r.oninput=()=>{demo.nowMin=+r.value;$("demoTimeOut").textContent=timeFromMinutes(demo.nowMin);render();};
+  body.querySelectorAll("[data-demo-step]").forEach(b=>b.onclick=()=>{demo.nowMin=clamp(demo.nowMin+Number(b.dataset.demoStep),0,1439);render();renderDemoDialog();});
+  const stop=$("demoStopBtn");if(stop) stop.onclick=demoStop;
+}
+function openDemoDialog(){
+  renderDemoDialog();
+  $("demoDialog").showModal();
+}
+
+$("pixelMeter").addEventListener("click",openDemoDialog);
+$("openDemoBtn")?.addEventListener("click",()=>{ $("settingsDialog").close(); openDemoDialog(); });
 
 setInterval(()=>{
   setHeader();
