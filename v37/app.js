@@ -2016,6 +2016,87 @@ function monthStats(year,month){
   }
   return stats;
 }
+
+/* ── V37 Monatsliste mit Wochensummen ──
+   Summen nur über gebuchte Tage (abgeschlossene Arbeitstage, Sammelbuchungen,
+   Urlaub/Krank/FZA/Feiertag/Sonderurlaub). Dadurch gilt immer: Ist − Soll = Saldo.
+   Der laufende Tag zählt erst nach Feierabend oder ab Erreichen des Solls. */
+let monthMode="cal";
+try{monthMode=localStorage.getItem("klokify-month-mode")||"cal";}catch{}
+function setMonthMode(m){monthMode=m;try{localStorage.setItem("klokify-month-mode",m);}catch{}render();}
+function fmtH(min){return hDur(min);}
+function fmtSigned(min){return Math.round(min||0)===0?"0:00":hSigned(min);}
+function monthListRow(key){
+  const d=dateFromKey(key),todayK=localDateKey(new Date());
+  const status=effectiveStatus(key),rec=state.records[key];
+  const c=recordCalc(key,key===todayK);
+  const target=targetForDate(key);
+  let what="",pause="",ist="",soll=target?fmtH(target):"",bal="",counts=false,cls="";
+  if(status==="work"&&rec&&(rec.start||isManualWorkRecord(rec))){
+    if(isManualWorkRecord(rec)){what="Sammelbuchung";counts=true;}
+    else{
+      what=`${rec.start}–${rec.end||(key===todayK?"läuft":"offen")}`;
+      pause=c.breakMin?String(Math.round(c.breakMin)):"0";
+      counts=!!rec.end||(key===todayK&&c.balance>=0);
+      if(!rec.end&&key!==todayK) cls="warn";
+    }
+    ist=fmtH(c.worked);
+    if(counts) bal=fmtSigned(c.balance); else bal=key===todayK?"läuft":"offen";
+  }else if(status!=="empty"&&status!=="work"){
+    what=STATUS[status].label;
+    if(status==="off"){soll="";}
+    else if(key<=todayK){ist=fmtH(c.worked);bal=fmtSigned(c.balance);counts=true;}
+    else{ist="";bal=status==="holiday"?"":"geplant";}
+    cls="typed "+status;
+  }else if(target>0){
+    what=key<todayK?"kein Eintrag":"";
+    if(key<todayK) cls="missing";
+  }else return null; // Wochenende ohne Eintrag
+  return {key,d,what,pause,ist,soll,bal,counts,cls,
+    sumSoll:counts?c.target:0,sumIst:counts?c.worked:0,sumBal:counts?c.balance:0,balNum:c.balance};
+}
+function renderMonthList(y,m){
+  const last=new Date(y,m+1,0).getDate();
+  let html="",wk={soll:0,ist:0,bal:0,n:0,c:0},mon={soll:0,ist:0,bal:0};
+  const flush=(kw)=>{
+    if(!wk.n) return;
+    html+=wk.c
+      ?`<tr class="sum"><td colspan="3">KW ${kw}</td><td>${fmtH(wk.soll)}</td><td>${fmtH(wk.ist)}</td><td class="${wk.bal>=0?"pos":"neg"}">${fmtSigned(wk.bal)}</td></tr>`
+      :`<tr class="sum empty"><td colspan="6">KW ${kw}</td></tr>`;
+    wk={soll:0,ist:0,bal:0,n:0,c:0};
+  };
+  let lastKw=null;
+  for(let day=1;day<=last;day++){
+    const dt=new Date(y,m,day),key=localDateKey(dt),kw=isoWeekNumber(dt);
+    if(lastKw!==null&&kw!==lastKw) flush(lastKw);
+    lastKw=kw;
+    const r=monthListRow(key);
+    if(!r) continue;
+    wk.n++;if(r.counts) wk.c++;
+    wk.soll+=r.sumSoll;wk.ist+=r.sumIst;wk.bal+=r.sumBal;
+    mon.soll+=r.sumSoll;mon.ist+=r.sumIst;mon.bal+=r.sumBal;
+    const today=key===localDateKey(new Date());
+    const balCls=r.counts?(r.balNum>=0?"pos":"neg"):"muted";
+    html+=`<tr class="${r.cls}${today?" today":""}" data-edit-day="${key}">
+      <td class="d"><b>${weekdayName(r.d)}</b> ${pad(r.d.getDate())}.</td>
+      <td class="w">${escapeHtml(r.what)}</td>
+      <td>${r.pause}</td>
+      <td class="${r.counts?"":"muted"}">${r.soll}</td>
+      <td>${r.ist}</td>
+      <td class="${balCls}">${r.bal}</td>
+    </tr>`;
+  }
+  flush(lastKw);
+  return `<section class="h-mlist card">
+    <table>
+      <colgroup><col style="width:17%"><col><col style="width:12%"><col style="width:13%"><col style="width:13%"><col style="width:15%"></colgroup>
+      <thead><tr><th>Tag</th><th>Zeit / Status</th><th>Pause</th><th>Soll</th><th>Ist</th><th>±</th></tr></thead>
+      <tbody>${html}</tbody>
+      <tfoot><tr><td colspan="3">${monthName(m)}</td><td>${fmtH(mon.soll)}</td><td>${fmtH(mon.ist)}</td><td class="${mon.bal>=0?"pos":"neg"}">${fmtSigned(mon.bal)}</td></tr></tfoot>
+    </table>
+    <p class="h-mlist-note">Summen über gebuchte Tage · Pause in Min · Zeile antippen = bearbeiten${homeOpt("konto")?` · Konto gesamt <b class="${kontoBalance()>=0?"pos":"neg"}">${hSigned(kontoBalance())} h</b>`:""}</p>
+  </section>`;
+}
 function renderMonth(){
   const y=monthCursor.getFullYear(),m=monthCursor.getMonth();
   const stats=monthStats(y,m);
@@ -2079,6 +2160,11 @@ function renderMonth(){
       <button class="month-secondary" id="todayMonthBtn">Heute</button>
     </section>
 
+    ${monthSelectMode?"":`<div class="h-seg" role="tablist" aria-label="Darstellung">
+      <button type="button" role="tab" data-month-mode="cal" aria-selected="${monthMode!=="list"}">Kalender</button>
+      <button type="button" role="tab" data-month-mode="list" aria-selected="${monthMode==="list"}">Liste</button>
+    </div>`}
+
     <section class="summary-grid">
       <article class="summary-card card"><span>Ist bis heute</span><strong>${formatHours(stats.worked)}</strong></article>
       <article class="summary-card card"><span>Soll bis heute</span><strong>${formatHours(stats.target)}</strong></article>
@@ -2093,15 +2179,15 @@ function renderMonth(){
       <span class="status-count holiday">◆ FT ${stats.holiday}</span>
     </section>
 
-    <section class="calendar card">
+    ${!monthSelectMode&&monthMode==="list"?renderMonthList(y,m):`<section class="calendar card">
       <div class="weekdays"><div>Mo</div><div>Di</div><div>Mi</div><div>Do</div><div>Fr</div><div>Sa</div><div>So</div></div>
       <div class="calendar-grid">${cells}</div>
-    </section>
+    </section>`}
 
     ${selectionPanel}
     ${holidayBlock}
 
-    ${monthSelectMode?"":`<section class="month-detail card">
+    ${monthSelectMode||monthMode==="list"?"":`<section class="month-detail card">
       <h3>${pad(sd.getDate())}.${pad(sd.getMonth()+1)}.${sd.getFullYear()}</h3>
       <div class="detail-row"><span>Status</span><strong>${selectedStatus==="empty"?"Kein Eintrag":STATUS[selectedStatus].label}</strong></div>
       ${bwHolidayName(selectedDate)?`<div class="detail-row"><span>Feiertag</span><strong class="holiday-label">${escapeHtml(bwHolidayName(selectedDate))}</strong></div>`:""}
@@ -2445,6 +2531,7 @@ function bookLiveQuickPause(min){
 
 function toggleMonthSelection(){
   monthSelectMode=!monthSelectMode;
+  if(monthSelectMode&&currentView==="month"&&monthMode==="list") monthMode="cal";
   if(!monthSelectMode) monthSelectedDates.clear();
   render();
 }
@@ -2536,6 +2623,7 @@ function bindDynamic(){
   const ty=$("thisYearBtn");
   if(ty) ty.addEventListener("click",()=>{yearCursor=new Date().getFullYear();render();});
 
+  document.querySelectorAll("[data-month-mode]").forEach(el=>el.addEventListener("click",()=>setMonthMode(el.dataset.monthMode)));
   document.querySelectorAll("[data-sheet]").forEach(el=>el.addEventListener("click",e=>{
     e.stopPropagation();
     HOME_SHEETS[el.dataset.sheet]?.();
