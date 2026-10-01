@@ -2828,3 +2828,10 @@ button:disabled{cursor:default;opacity:.5}
 .wp-preview .planner-preview-row small{white-space:nowrap;font-size:var(--fs-m)!important;font-weight:700}
 .wp37 .wp-goal-row>*{min-width:0}
 .wp37 .wp-goal input{width:100%;min-width:0}
+.wp-calc{display:flex;justify-content:space-between;gap:8px;padding:8px 12px;background:var(--panel2);font:500 var(--fs-s)/1.3 var(--font-num);color:var(--muted)}
+.wp-calc b{font-size:var(--fs-m)} .wp-calc b.pos{color:var(--lime)} .wp-calc b.neg{color:var(--danger)}
+.wp-exact{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 12px;font-size:var(--fs-s);color:var(--muted);border-bottom:1px solid var(--line)}
+.wp-exact b{color:var(--text);font-family:var(--font-num);font-size:var(--fs-m)}
+.wp-take{border:0;border-radius:8px;padding:8px 12px;background:rgba(182,226,76,.16);color:var(--lime);font:700 var(--fs-s)/1 var(--font-ui)}
+.h-day .db.pos{color:var(--lime)} .h-day .db.neg{color:var(--danger)}
+.wp-exact b{white-space:nowrap}

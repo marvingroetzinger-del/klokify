@@ -2833,6 +2833,13 @@ button:disabled{cursor:default;opacity:.5}
 .wp-preview .planner-preview-row small{white-space:nowrap;font-size:var(--fs-m)!important;font-weight:700}
 .wp37 .wp-goal-row>*{min-width:0}
 .wp37 .wp-goal input{width:100%;min-width:0}
+.wp-calc{display:flex;justify-content:space-between;gap:8px;padding:8px 12px;background:var(--panel2);font:500 var(--fs-s)/1.3 var(--font-num);color:var(--muted)}
+.wp-calc b{font-size:var(--fs-m)} .wp-calc b.pos{color:var(--lime)} .wp-calc b.neg{color:var(--danger)}
+.wp-exact{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 12px;font-size:var(--fs-s);color:var(--muted);border-bottom:1px solid var(--line)}
+.wp-exact b{color:var(--text);font-family:var(--font-num);font-size:var(--fs-m)}
+.wp-take{border:0;border-radius:8px;padding:8px 12px;background:rgba(182,226,76,.16);color:var(--lime);font:700 var(--fs-s)/1 var(--font-ui)}
+.h-day .db.pos{color:var(--lime)} .h-day .db.neg{color:var(--danger)}
+.wp-exact b{white-space:nowrap}
 
 </style>
 
@@ -3927,7 +3934,17 @@ function renderWeekPlanPreview(plan){
   const warningHTML=result.warnings.length?`<div class="planner-warning">${result.warnings.map(x=>`<div>! ${x}</div>`).join("")}</div>`:"";
   const gapClass=result.gap>=0?"positive":"negative";
   const gapText=result.gap===0?"Wochenziel exakt geplant":result.gap>0?`${formatCompact(result.gap)} über Wochenziel`:`${formatCompact(Math.abs(result.gap))} fehlen noch`;
-  return `<div class="planner-preview-head"><span>Plan</span><strong class="${gapClass}">${gapText}</strong></div>
+  const fr=result.rows.find(r=>r.key===result.fridayKey);
+  let calc="";
+  if(fr&&fr.end){
+    const before=result.gap-fr.delta;
+    const need=Math.max(0,fr.work-result.gap);
+    const frStart=minutesFromTime(plannerStartForKey(result.fridayKey))??395;
+    const exactMin=frStart+need+(need>360?Math.max(0,Number(state.settings.plannedPauseMin)||0):0);
+    calc=`<div class="wp-calc"><span>Mo–Do <b class="${before>=0?"pos":"neg"}">${hSigned(before)}</b></span><span>Fr <b class="${fr.delta>=0?"pos":"neg"}">${hSigned(fr.delta)}</b></span><span>= Woche <b class="${result.gap>=0?"pos":"neg"}">${hSigned(result.gap)}</b></span></div>
+    ${result.gap!==0?`<div class="wp-exact"><span>Genau Wochenziel: <b>bis ${timeFromMinutes(exactMin)}</b></span><button type="button" class="wp-take" data-take-friday="${timeFromMinutes(exactMin)}">übernehmen</button></div>`:""}`;
+  }
+  return `<div class="planner-preview-head"><span>Plan</span><strong class="${gapClass}">${gapText}</strong></div>${calc}
     <div class="planner-preview-list">${result.rows.map(row=>`<div class="planner-preview-row${row.key===localDateKey(new Date())?" today":""}"><span>${plannerRowLabel(row)}</span><strong>${plannerStatusText(row)}</strong><small class="${row.delta>=0?"positive":"negative"}">${row.target?formatSignedHours(row.delta):""}</small></div>`).join("")}</div>${warningHTML}`;
 }
 function plannerConstraintCandidates(){
@@ -4548,7 +4565,9 @@ function hWeek(){
 
     if(i===4&&key>todayK&&(plan||f.mode==="forecast")&&(status==="work"||status==="empty")){
       const t=plan?plan.fridayEnd:timeFromMinutes(f.projectedEnd);
-      cells.push(`<button type="button" class="h-day fc" id="openWeekPlannerBtn" aria-label="Freitag planen"><span class="dn">Fr</span><span class="dh">${t}</span><span class="db">${plan?"Plan":"Prognose"}</span></button>`);
+      let sub=plan?"Plan":"Prognose",subCls="";
+      if(plan){const g=calculateWeekPlan(plan).gap;sub=g===0?"±0 Woche":hSigned(g);subCls=g>=0?"pos":"neg";}
+      cells.push(`<button type="button" class="h-day fc" id="openWeekPlannerBtn" aria-label="Freitag planen${plan?`, Woche endet ${sub}`:""}"><span class="dn">Fr${plan?" · Plan":""}</span><span class="dh">${t}</span><span class="db ${subCls}">${sub}</span></button>`);
       continue;
     }
     let dh="–",db="",dbCls="";
@@ -4580,7 +4599,7 @@ function hWeek(){
     sub="Wochensaldo";
   }
   return `<section class="h-week">
-    <button type="button" class="h-week-head" data-sheet="konto" aria-label="Zeitkonto öffnen"><span><span class="h-kicker">Woche ${isoWeekNumber(sel)}</span><b class="${bal>=0?"pos":"neg"}">${hSigned(bal)}</b></span>${homeOpt("konto")?`<span class="h-konto"><small>Konto</small><b class="${kontoBalance()>=0?"pos":"neg"}">${hSigned(kontoBalance())} h</b><i>›</i></span>`:`<span class="h-konto"><small>${sub}</small><i>›</i></span>`}</button>
+    <button type="button" class="h-week-head" data-sheet="konto" aria-label="Zeitkonto öffnen"><span><span class="h-kicker">KW ${isoWeekNumber(sel)}</span><b class="${bal>=0?"pos":"neg"}">${hSigned(bal)}</b></span>${homeOpt("konto")?`<span class="h-konto"><small>Konto</small><b class="${kontoBalance()>=0?"pos":"neg"}">${hSigned(kontoBalance())} h</b><i>›</i></span>`:`<span class="h-konto"><small>${sub}</small><i>›</i></span>`}</button>
     <div class="h-days">${cells.join("")}</div>
   </section>`;
 }
@@ -6549,6 +6568,12 @@ $("editForm").addEventListener("submit",async e=>{
 $("plannerFridayEnd").addEventListener("input",()=>{plannerFridayPauseTouched=false;updateWeekPlannerPreview();});
 $("plannerFridayPause").addEventListener("input",()=>{plannerFridayPauseTouched=true;updateWeekPlannerPreview();});
 $("plannerDistribution").addEventListener("change",updateWeekPlannerPreview);
+$("weekPlannerPreview").addEventListener("click",e=>{
+  const b=e.target.closest("[data-take-friday]");
+  if(!b) return;
+  $("plannerFridayEnd").value=b.dataset.takeFriday;
+  plannerFridayPauseTouched=false;updateWeekPlannerPreview();
+});
 document.querySelectorAll("[data-plan-dist]").forEach(b=>b.addEventListener("click",()=>{$("plannerDistribution").value=b.dataset.planDist;updateWeekPlannerPreview();}));
 document.querySelectorAll("[data-fr-step]").forEach(b=>b.addEventListener("click",()=>{
   const m=minutesFromTime($("plannerFridayEnd").value)??720;
@@ -6947,7 +6972,7 @@ if(state.settings.demoSeed && Object.keys(state.records).length===0){
 const DEMO_SCENARIOS={
   pre:{label:"Vor Beginn",now:"06:20",today:null},
   late:{label:"Vergessen zu stempeln",now:"06:50",today:null},
-  run:{label:"Läuft",now:"11:20",today:{start:"06:35",pauses:[["09:00","09:15"]]}},
+  run:{label:"Läuft",now:"11:20",today:{start:"06:32",pauses:[["09:00","09:16"]]}},
   pause:{label:"Pause läuft",now:"12:15",today:{start:"06:35",pauses:[["09:00","09:15"],["12:00",""]]}},
   over:{label:"Soll erreicht",now:"15:35",today:{start:"06:35",pauses:[["09:00","09:15"],["12:00","12:20"]]}},
   limit:{label:"10-h-Grenze naht",now:"16:50",today:{start:"06:35",pauses:[["09:00","09:15"],["12:00","12:20"]]}},
@@ -6961,18 +6986,36 @@ function demoBuildState(scen){
   const today=new Date();today.setHours(12,0,0,0);
   const todayK=localDateKey(today);
   const mon=mondayOfDate(today);
-  const starts=["06:30","06:35","06:40","06:30"],ends=["15:20","15:20","15:20","15:10"];
-  for(let i=0;i<4;i++){
-    const d=new Date(mon);d.setDate(mon.getDate()+i);
-    const k=localDateKey(d);
-    if(k>=todayK) break;
-    st.records[k]={status:"work",start:starts[i],end:ends[i],pauses:[{start:"09:00",end:"09:15"},{start:"12:00",end:"12:15"}],note:""};
+  // Zeiten wie in Marvins Woche (Mo 8:51 · Di 8:13 · Mi 8:39 · Do 8:54 · Fr kurz)
+  const P=(a,b)=>({start:a,end:b});
+  const WEEK=[
+    {start:"06:30",end:"15:51",pauses:[P("09:00","09:15"),P("12:00","12:15")]},
+    {start:"06:35",end:"15:18",pauses:[P("09:00","09:15"),P("12:00","12:15")]},
+    {start:"06:40",end:"15:49",pauses:[P("09:00","09:15"),P("12:00","12:15")]},
+    {start:"06:32",end:"15:57",pauses:[P("09:00","09:16"),P("12:00","12:15")]},
+    {start:"06:35",end:"13:05",pauses:[P("09:00","09:15"),P("11:30","11:45")]}
+  ];
+  const shift=(t,m)=>timeFromMinutes(minutesFromTime(t)+m);
+  for(let w=3;w>=0;w--){
+    for(let i=0;i<5;i++){
+      const d=new Date(mon);d.setDate(mon.getDate()-w*7+i);
+      const k=localDateKey(d);
+      if(k>=todayK) break;
+      if(bwHolidayName(k)) continue;
+      if(w===2&&i===2){st.records[k]={status:"sick",start:"",end:"",pauses:[],note:""};continue;}
+      const v=(w*3+i*2)%7-3; // kleine Abweichungen je Tag
+      const x=WEEK[i];
+      st.records[k]={status:"work",start:shift(x.start,v),end:shift(x.end,v*2),pauses:x.pauses.map(p=>({...p})),note:w===0&&i===1?"Baustelle Ludwigsburg":""};
+    }
   }
+  // Freitags-Plan bis 14:00 (wie im Screenshot), solange Freitag noch kommt
+  const fri=new Date(mon);fri.setDate(mon.getDate()+4);
+  if(localDateKey(fri)>todayK) st.weekPlans[localDateKey(mon)]={fridayEnd:"14:00",fridayPauseMin:30,distribution:"even",constraints:{}};
   // Urlaub in gut zwei Wochen, damit Countdown und Wochenzeile etwas zeigen
   const v=new Date(today);v.setDate(v.getDate()+14);
   while(v.getDay()!==1) v.setDate(v.getDate()+1);
   for(let i=0;i<5;i++){const d=new Date(v);d.setDate(v.getDate()+i);st.records[localDateKey(d)]={status:"vacation",start:"",end:"",pauses:[],note:""};}
-  if(!st.settings.kontoStartMin){st.settings.kontoStartMin=23*60+7;st.settings.kontoStartDate=localDateKey(mon);}
+  if(!st.settings.kontoStartMin){st.settings.kontoStartMin=23*60+7;const k0=new Date(mon);k0.setDate(mon.getDate()-21);st.settings.kontoStartDate=localDateKey(k0);}
   const t=DEMO_SCENARIOS[scen].today;
   if(t) st.records[todayK]={status:"work",start:t.start,end:t.end||"",pauses:t.pauses.map(([a,b])=>({start:a,end:b})),targetHours:8,note:""};
   return st;
