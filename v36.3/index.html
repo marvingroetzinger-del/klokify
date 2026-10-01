@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#07101e" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>Klokify</title>
+  <link rel="manifest" href="manifest.webmanifest?v=36.3" />
+  <link rel="icon" href="icon.svg?v=36.3" type="image/svg+xml" />
+  <link rel="stylesheet" href="styles.css?v=36.3" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div>
+        <div class="eyebrow" id="headerDate"></div>
+        <div class="live-time" id="liveTime"></div>
+      </div>
+      <button class="icon-btn" id="settingsBtn" aria-label="Einstellungen">⚙</button>
+    </header>
+
+    <main id="appContent" class="content"></main>
+
+    <nav class="bottom-nav">
+      <button type="button" class="nav-item active" data-view="day" aria-current="page"><span aria-hidden="true">▣</span><small>Tag</small></button>
+      <button type="button" class="nav-item" data-view="week"><span aria-hidden="true">▦</span><small>Woche</small></button>
+      <button type="button" class="nav-item" data-view="month"><span aria-hidden="true">▤</span><small>Monat</small></button>
+      <button type="button" class="nav-item" data-view="year"><span aria-hidden="true">▥</span><small>Jahr</small></button>
+    </nav>
+  </div>
+
+  <dialog id="editDialog" class="dialog">
+    <form id="editForm">
+      <div class="dialog-head">
+        <div>
+          <h2>Tag bearbeiten</h2>
+          <div class="muted small" id="editDateLabel"></div>
+        </div>
+        <button type="button" class="icon-btn mini" data-close="editDialog">×</button>
+      </div>
+
+      <label>Tagestyp
+        <select id="editStatus">
+          <option value="work">Arbeit</option>
+          <option value="vacation">Urlaub</option>
+          <option value="specialLeave">Sonderurlaub</option>
+          <option value="sick">Krank</option>
+          <option value="holiday">Feiertag</option>
+          <option value="flex">FZA</option>
+          <option value="off">Frei</option>
+          <option value="clear">Kein Eintrag (löschen)</option>
+        </select>
+      </label>
+
+      <div id="workFields">
+        <div class="form-grid">
+          <label>Beginn <input type="time" id="editStart"></label>
+          <label>Ende <input type="time" id="editEnd"></label>
+        </div>
+
+        <div class="subhead-row pause-subhead-row">
+          <h3>Pausen</h3>
+          <div class="pause-head-actions">
+            <div class="edit-quick-pause-row" id="editQuickPauseButtons"></div>
+            <button type="button" class="tiny-btn" id="addPauseRowBtn">+ Pause</button>
+          </div>
+        </div>
+        <div id="pauseRows"></div>
+
+        <div class="smart-pause-box">
+          <div class="smart-pause-title">Pausendauer ohne Uhrzeit</div>
+          <div class="smart-pause-row">
+            <input type="text" id="smartPauseInput" inputmode="decimal" autocomplete="off"
+                   placeholder="z. B. 10 · 15 · 1:30">
+            <button type="button" id="addSmartPauseBtn">＋</button>
+          </div>
+          <div class="smart-pause-preview" id="smartPausePreview">Für Pausen, bei denen nur die Dauer bekannt ist.</div>
+        </div>
+
+        <details class="edit-advanced" id="editAdvanced">
+          <summary>Weitere Optionen</summary>
+          <div class="edit-advanced-panel">
+            <div class="manual-work-box">
+              <label>Arbeitszeit direkt
+                <input type="text" id="editManualWorked" inputmode="decimal" autocomplete="off"
+                       placeholder="z. B. 8 · 8,25 · 8:15">
+              </label>
+              <div class="manual-work-hint" id="editManualWorkedHint">Nur für Nachträge ohne Beginn und Ende.</div>
+            </div>
+
+            <label>Abweichende Sollzeit (h)
+              <input type="number" id="editTarget" min="0" max="16" step="0.25">
+            </label>
+          </div>
+        </details>
+      </div>
+
+      <label>Notiz <input type="text" id="editNote" maxlength="160" placeholder="optional"></label>
+
+      <div id="editValidation" class="edit-validation" role="alert" hidden></div>
+
+      <div class="dialog-actions">
+        <button type="button" class="ghost-btn" data-close="editDialog">Abbrechen</button>
+        <button type="submit" class="primary-small">Speichern</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="pauseDialog" class="dialog">
+    <div class="dialog-head">
+      <h2>Pause</h2>
+      <button type="button" class="icon-btn mini" data-close="pauseDialog">×</button>
+    </div>
+    <p class="muted" id="pauseDialogHint">Pause starten oder schnell eintragen.</p>
+    <button class="primary-small full" id="toggleLivePauseBtn">Pause jetzt starten</button>
+    <div class="pause-dialog-sep"><span>Schnellpause</span></div>
+    <div class="quick-grid live-quick-grid" id="liveQuickPauseGrid"></div>
+  </dialog>
+
+  <dialog id="bulkDialog" class="dialog bulk-dialog">
+    <div class="dialog-head">
+      <div>
+        <h2>Zeitraum eintragen</h2>
+        <div class="muted small">Mehrere Tage auf einmal buchen</div>
+      </div>
+      <button type="button" class="icon-btn mini" data-close="bulkDialog">×</button>
+    </div>
+
+    <div class="type-chip-grid" id="bulkTypeChips">
+      <button type="button" data-bulk-type="work" class="type-chip work">● Arbeit</button>
+      <button type="button" data-bulk-type="vacation" class="type-chip vacation active">🏖 Urlaub</button>
+      <button type="button" data-bulk-type="specialLeave" class="type-chip specialLeave">🌴 Sonderurlaub</button>
+      <button type="button" data-bulk-type="sick" class="type-chip sick">✚ Krank</button>
+      <button type="button" data-bulk-type="flex" class="type-chip flex">↻ FZA</button>
+      <button type="button" data-bulk-type="off" class="type-chip off">○ Frei</button>
+      <button type="button" data-bulk-type="holiday" class="type-chip holiday">◆ Feiertag</button>
+    </div>
+
+    <div class="quick-range-row">
+      <button type="button" data-range-preset="month">Dieser Monat</button>
+      <button type="button" data-range-preset="week">Diese Woche</button>
+      <button type="button" data-range-preset="nextweek">Nächste Woche</button>
+    </div>
+
+    <div class="form-grid">
+      <label>Von <input type="date" id="bulkFrom"></label>
+      <label>Bis <input type="date" id="bulkTo"></label>
+    </div>
+
+    <div id="bulkWorkHint" class="bulk-work-hint" hidden>
+      <strong>Arbeit als Sammelbuchung</strong>
+      <span>Jeder Tag erhält automatisch seine hinterlegte Sollzeit als Arbeitszeit. Es werden keine Beginn-/Ende-Uhrzeiten erfunden. Einzelne Tage kannst du später genau nachtragen.</span>
+    </div>
+
+    <div class="bulk-options card-lite">
+      <label class="check-line"><input type="checkbox" id="bulkSkipWeekends" checked> Wochenenden überspringen</label>
+      <label class="check-line"><input type="checkbox" id="bulkSkipHolidays" checked> Feiertage überspringen</label>
+      <label class="check-line"><input type="checkbox" id="bulkOverwrite"> Vorhandene Einträge überschreiben</label>
+    </div>
+
+    <label>Notiz <input type="text" id="bulkNote" maxlength="160" placeholder="optional, für alle Tage"></label>
+
+    <div id="bulkPreview" class="bulk-preview"></div>
+
+    <div class="dialog-actions">
+      <button type="button" class="ghost-btn" data-close="bulkDialog">Abbrechen</button>
+      <button type="button" class="primary-small" id="saveBulkBtn">Eintragen</button>
+    </div>
+  </dialog>
+
+
+  <dialog id="weekPlannerDialog" class="dialog week-planner-dialog">
+    <form id="weekPlannerForm">
+      <div class="dialog-head">
+        <div>
+          <h2>Woche planen</h2>
+          <div class="muted small" id="weekPlannerDateLabel"></div>
+        </div>
+        <button type="button" class="icon-btn mini" data-close="weekPlannerDialog" aria-label="Schließen">×</button>
+      </div>
+
+      <section class="planner-goal">
+        <div class="planner-section-title">Freitag Wunsch-Feierabend</div>
+        <div class="planner-goal-grid">
+          <label>Zielzeit
+            <input type="time" id="plannerFridayEnd" required>
+          </label>
+          <label>Pause Freitag (Min)
+            <input type="number" id="plannerFridayPause" min="0" max="180" step="5">
+          </label>
+        </div>
+        <div class="planner-hint" id="plannerFridayHint"></div>
+      </section>
+
+      <section class="planner-special-section">
+        <div class="planner-section-title">Tage dieser Woche</div>
+        <div class="muted planner-mini-copy">Alle Arbeitstage bleiben sichtbar. Vergangene Tage zählen mit ihren Ist-Zeiten; bei offenen Tagen kannst du eine feste Endzeit eintragen.</div>
+        <div id="plannerConstraintRows" class="planner-constraints"></div>
+      </section>
+
+      <label>Übrige Zeit verteilen
+        <select id="plannerDistribution">
+          <option value="even">Gleichmäßig verteilen</option>
+          <option value="frontload">Frühestmöglich vorarbeiten</option>
+        </select>
+      </label>
+
+      <section id="weekPlannerPreview" class="week-planner-preview" aria-live="polite"></section>
+
+      <div class="planner-dialog-actions">
+        <button type="button" class="danger-ghost" id="deleteWeekPlanBtn">Plan löschen</button>
+        <div class="planner-save-actions">
+          <button type="button" class="ghost-btn" data-close="weekPlannerDialog">Abbrechen</button>
+          <button type="submit" class="primary-small">Plan speichern</button>
+        </div>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="settingsDialog" class="dialog settings-dialog">
+    <div class="dialog-head settings-dialog-head">
+      <div>
+        <h2>Einstellungen</h2>
+        <small>Nur öffnen, was du gerade brauchst.</small>
+      </div>
+      <button type="button" class="icon-btn mini" data-close="settingsDialog">×</button>
+    </div>
+
+    <div class="settings-accordion-list">
+      <details class="settings-accordion" open>
+        <summary>
+          <span class="settings-summary-copy"><b>Arbeitszeit</b><small id="settingsSummaryWork"></small></span>
+          <span class="settings-chevron">⌄</span>
+        </summary>
+        <div class="settings-accordion-panel">
+          <h3>Standard-Sollzeit</h3>
+          <div class="weekday-targets" id="weekdayTargets"></div>
+
+          <h3>Geplanter Arbeitsbeginn</h3>
+          <div class="weekday-starts" id="weekdayStarts"></div>
+        </div>
+      </details>
+
+      <details class="settings-accordion">
+        <summary>
+          <span class="settings-summary-copy"><b>Pause</b><small id="settingsSummaryPause"></small></span>
+          <span class="settings-chevron">⌄</span>
+        </summary>
+        <div class="settings-accordion-panel">
+          <label>Geplante Pause (Min)
+            <input type="number" id="plannedPauseInput" min="0" max="180" step="5">
+          </label>
+
+          <h3>Schnellpausen</h3>
+          <p class="settings-help">Bis zu 4 eigene Pausenzeiten. Mit 0 wird ein Button ausgeblendet.</p>
+          <div class="quickpause-grid" id="quickPauseSettings"></div>
+
+          <label class="toggle-line">
+            <span>Pausenhinweis ab 6 Stunden</span>
+            <input type="checkbox" id="breakReminder">
+          </label>
+        </div>
+      </details>
+
+      <details class="settings-accordion">
+        <summary>
+          <span class="settings-summary-copy"><b>Urlaub & Feiertage</b><small id="settingsSummaryCalendar"></small></span>
+          <span class="settings-chevron">⌄</span>
+        </summary>
+        <div class="settings-accordion-panel">
+          <label>Urlaubsanspruch (Tage)
+            <input type="number" id="vacationEntitlementInput" min="0" max="60" step="0.5">
+          </label>
+
+          <label class="toggle-line">
+            <span>Feiertage Baden-Württemberg automatisch</span>
+            <input type="checkbox" id="autoHolidaysBW">
+          </label>
+        </div>
+      </details>
+
+      <details class="settings-accordion">
+        <summary>
+          <span class="settings-summary-copy"><b>Homescreen</b><small id="settingsSummaryHome"></small></span>
+          <span class="settings-chevron">⌄</span>
+        </summary>
+        <div class="settings-accordion-panel">
+          <p class="settings-help core-home-help">Feierabend, Fortschritt, Tageslogik und Arbeitsaktionen sind fest. Nur Zusatzinfos lassen sich ein- oder ausblenden.</p>
+
+          <label class="home-image-toggle">
+            <span class="home-layout-icon">◫</span>
+            <span class="home-layout-copy"><b>Feierabendmotiv</b><small>Bild im oberen Tagesbereich</small></span>
+            <input type="checkbox" id="homeImageToggle">
+          </label>
+
+          <div class="home-layout-caption">Optionale Zusatzinfos</div>
+          <div id="homeLayoutList" class="home-layout-list home-layout-list-fixed"></div>
+          <button type="button" class="ghost-btn full compact-reset" id="resetHomeLayoutBtn">Standardansicht</button>
+        </div>
+      </details>
+
+      <details class="settings-accordion">
+        <summary>
+          <span class="settings-summary-copy"><b>Daten & System</b><small>Export · Backup · Zurücksetzen</small></span>
+          <span class="settings-chevron">⌄</span>
+        </summary>
+        <div class="settings-accordion-panel">
+          <label class="toggle-line">
+            <span>Pixel-Messanzeige unten rechts</span>
+            <input type="checkbox" id="pixelMeterToggle">
+          </label>
+
+          <label class="toggle-line">
+            <span>Demo-Werte beim ersten Start</span>
+            <input type="checkbox" id="demoSeed">
+          </label>
+
+          <div class="settings-actions">
+            <button class="ghost-btn" id="exportJsonBtn">JSON</button>
+            <button class="ghost-btn" id="exportCsvBtn">CSV</button>
+          </div>
+          <label class="ghost-btn import-label full">Backup importieren
+            <input type="file" id="importInput" accept="application/json">
+          </label>
+          <button class="danger-btn full" id="resetAllBtn">Alle Daten löschen</button>
+        </div>
+      </details>
+    </div>
+
+    <div class="settings-save-bar">
+      <button class="primary-small full" id="saveSettingsBtn">Einstellungen speichern</button>
+    </div>
+  </dialog>
+
+  <div id="toast" class="toast" role="status"></div>
+  <div id="pixelMeter" class="pixel-meter" aria-hidden="true"></div>
+
+  <script src="app.js?v=36.3"></script>
+</body>
+</html>

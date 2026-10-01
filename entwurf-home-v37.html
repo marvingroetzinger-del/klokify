@@ -1,0 +1,481 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Klokify Homescreen</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Semi+Condensed:wght@600;700&display=swap">
+<style>
+/* Layout: eine Spalte, ausgelegt auf 411 px (Samsung S25). Oben Feierabend + Zeitstrahl, Mitte Aktionen, unten eine Infoleiste. */
+:root{
+  color-scheme:dark;
+  /* Graphit + Lime */
+  --bg:#1b2027;
+  --surface:#252b34;
+  --surface-2:#2f3640;
+  --line:#3a424e;
+  --text:#eef1f4;
+  --muted:#a2acb9;
+  --lime:#b6e24c;
+  --lime-soft:rgba(182,226,76,.14);
+  --on-lime:#18210a;
+  --amber:#f2a83f;
+  --amber-soft:rgba(242,168,63,.16);
+  --red:#f07672;
+  --blue:#7db8f2;
+  /* Schrift: nur diese fünf Größen */
+  --fs-s:13px; --fs-m:16px; --fs-l:20px; --fs-xl:28px; --fs-hero:76px;
+  --font-ui:"Barlow",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --font-num:"Barlow Semi Condensed","Barlow",system-ui,sans-serif;
+  --r:16px;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font-ui);font-size:var(--fs-m);line-height:1.35;-webkit-tap-highlight-color:transparent}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;padding:0}
+button:focus-visible{outline:2px solid var(--lime);outline-offset:2px}
+.num{font-family:var(--font-num);font-variant-numeric:tabular-nums}
+
+.app{max-width:480px;margin:0 auto;padding-inline:16px;padding-block:12px calc(96px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:12px}
+
+/* Kopf */
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px}
+.top-date{font-size:var(--fs-m);font-weight:600}
+.top-date small{display:block;font-size:var(--fs-s);color:var(--muted);font-weight:500}
+.top-right{display:flex;align-items:center;gap:10px}
+.top-clock{font-size:var(--fs-l);font-weight:600}
+.icon-btn{width:44px;height:44px;border-radius:12px;background:var(--surface);display:grid;place-items:center;color:var(--muted)}
+.icon-btn svg{width:22px;height:22px}
+
+/* Hauptkarte */
+.hero{background:var(--surface);border-radius:20px;padding:18px 18px 16px;display:flex;flex-direction:column;gap:14px}
+.hero-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.kicker{font-size:var(--fs-s);font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.chip{font-size:var(--fs-s);font-weight:600;padding:4px 10px;border-radius:999px;background:var(--surface-2);color:var(--muted);white-space:nowrap}
+.chip.run{background:var(--lime-soft);color:var(--lime)}
+.chip.pause{background:var(--amber-soft);color:var(--amber)}
+.chip.done{background:var(--surface-2);color:var(--text)}
+.hero-time{font-family:var(--font-num);font-weight:700;font-size:var(--fs-hero);line-height:.9;letter-spacing:-.01em;color:var(--lime);margin-top:-4px}
+.hero-time.neutral{color:var(--text)}
+.hero-sub{font-size:var(--fs-l);font-weight:600;color:var(--text)}
+.hero-sub span{color:var(--muted);font-weight:500}
+
+/* Zeitstrahl */
+.tl-ends{display:flex;justify-content:space-between;align-items:baseline;font-size:var(--fs-s);color:var(--muted)}
+.tl-ends b{font-family:var(--font-num);font-size:var(--fs-l);color:var(--text);font-weight:600;margin-left:6px}
+.tl-ends .right b{margin-left:6px}
+.track{position:relative;height:40px;border-radius:10px;background:var(--surface-2);overflow:visible;margin-top:6px}
+.track-clip{position:absolute;inset:0;border-radius:10px;overflow:hidden}
+.tick{position:absolute;bottom:0;width:1px;height:10px;background:rgba(110,118,128,.45)}
+.tick.half{height:5px}
+.fill{position:absolute;top:0;bottom:0;left:0;background:var(--lime)}
+.pz{position:absolute;top:0;bottom:0;background:var(--amber)}
+.pz.running{background:repeating-linear-gradient(135deg,var(--amber) 0 6px,#c9852b 6px 12px)}
+.soll-mark{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--text);opacity:.55}
+.now{position:absolute;top:-6px;bottom:-6px;width:3px;margin-left:-1.5px;border-radius:2px;background:var(--text);box-shadow:0 0 0 2px var(--surface)}
+.pz-labels{position:relative;margin-top:6px}
+.pz-label{position:absolute;transform:translateX(-50%);font-size:var(--fs-s);font-weight:600;color:var(--amber);white-space:nowrap;font-family:var(--font-num);font-variant-numeric:tabular-nums}
+.meta{display:flex;justify-content:space-between;gap:10px;font-size:var(--fs-m);color:var(--muted);border-top:1px solid var(--line);padding-top:12px}
+.meta b{color:var(--text);font-weight:600;font-family:var(--font-num);font-size:var(--fs-l)}
+.meta .pz-meta b{color:var(--amber)}
+
+/* Start-Karte */
+.start-card{background:var(--surface);border-radius:20px;padding:20px 18px;display:flex;flex-direction:column;gap:12px}
+.start-card h2{margin:0;font-size:var(--fs-xl);font-weight:700}
+.start-card p{margin:0;color:var(--muted)}
+.plan-line{display:flex;justify-content:space-between;background:var(--surface-2);border-radius:12px;padding:12px 14px;font-size:var(--fs-m);color:var(--muted)}
+.plan-line b{color:var(--text);font-family:var(--font-num);font-size:var(--fs-l)}
+
+/* Aktionen */
+.actions{display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px}
+.btn{min-height:64px;border-radius:var(--r);background:var(--surface);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:var(--fs-s);font-weight:600;color:var(--text)}
+.btn svg{width:22px;height:22px}
+.btn.primary{background:var(--lime);color:var(--on-lime);flex-direction:row;gap:10px;font-size:var(--fs-l);font-weight:700}
+.btn.primary.wide{width:100%}
+.btn.pause svg{color:var(--amber)}
+.btn.pause.active{background:var(--amber);color:#2a1a04}
+.btn.pause.active svg{color:#2a1a04}
+.btn.ghost{background:var(--surface-2);font-size:var(--fs-m);flex-direction:row;gap:8px}
+.btn.ghost small{color:var(--muted);font-weight:500;font-size:var(--fs-s)}
+.btn:disabled{opacity:.4;cursor:default}
+
+/* Hinweis */
+.hint{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:12px;background:var(--surface);font-size:var(--fs-m);color:var(--muted)}
+.hint b{color:var(--text)}
+.hint i{flex:none;width:8px;height:8px;border-radius:50%;margin-top:7px;background:var(--blue)}
+.hint.warn i{background:var(--amber)}
+.hint.alert i{background:var(--red)}
+
+/* Infoleiste */
+.strip{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.tile{background:var(--surface);border-radius:var(--r);padding:12px 12px 11px;text-align:left;display:flex;flex-direction:column;gap:2px;min-width:0}
+.tile span{font-size:var(--fs-s);color:var(--muted);font-weight:500}
+.tile b{font-family:var(--font-num);font-size:var(--fs-xl);font-weight:700;line-height:1.1;white-space:nowrap}
+.tile small{font-size:var(--fs-s);color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tile .unit{font-style:normal;font-size:var(--fs-m);font-weight:600}
+.pos{color:var(--lime)} .neg{color:var(--red)} .vac{color:var(--blue)}
+
+/* Navigation */
+.nav{position:fixed;left:0;right:0;bottom:0;background:var(--bg);border-top:1px solid var(--line);padding:8px 16px calc(8px + env(safe-area-inset-bottom,0px))}
+.nav-in{max-width:448px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.nav button{height:52px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:var(--fs-s);font-weight:600;color:var(--muted)}
+.nav button svg{width:22px;height:22px}
+.nav button[aria-current]{color:var(--lime);background:var(--lime-soft)}
+
+/* Sheet */
+.scrim{position:fixed;inset:0;background:rgba(10,12,16,.6);display:flex;align-items:flex-end;justify-content:center;z-index:20}
+.sheet{width:100%;max-width:480px;max-height:85%;overflow:auto;background:var(--surface);border-radius:20px 20px 0 0;padding:10px 16px calc(20px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:14px}
+.grab{width:40px;height:4px;border-radius:2px;background:var(--line);margin:0 auto 4px}
+.sheet h3{margin:0;font-size:var(--fs-l)}
+.sheet p{margin:0;color:var(--muted)}
+.rows{display:flex;flex-direction:column}
+.row{display:flex;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--line)}
+.row:last-child{border-bottom:0}
+.row span{color:var(--muted)}
+.row b{font-family:var(--font-num);font-size:var(--fs-l);font-weight:600}
+.row.total b{color:var(--lime)}
+.quick{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.quick button{height:52px;border-radius:12px;background:var(--surface-2);font-weight:700;font-size:var(--fs-l);font-family:var(--font-num)}
+.quick button small{display:block;font-size:var(--fs-s);font-family:var(--font-ui);color:var(--muted);font-weight:500}
+.seg{display:flex;flex-wrap:wrap;gap:8px}
+.seg button{padding:10px 12px;border-radius:10px;background:var(--surface-2);font-size:var(--fs-s);font-weight:600}
+.seg button[aria-pressed="true"]{background:var(--lime);color:var(--on-lime)}
+input[type=range]{width:100%;accent-color:var(--lime)}
+
+/* Toast */
+.toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);width:calc(100% - 32px);max-width:448px;background:var(--text);color:var(--bg);border-radius:12px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:12px;font-weight:600;z-index:30}
+.toast button{color:#4a6b00;font-weight:700}
+
+/* Pixel-Messanzeige */
+.pixel{position:fixed;right:4px;bottom:calc(72px + env(safe-area-inset-bottom,0px));font:600 11px/1 system-ui,sans-serif;color:var(--muted);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:4px 6px;opacity:.85;z-index:15}
+
+@media (prefers-reduced-motion:no-preference){
+  .fill,.pz,.now{transition:width .3s ease,left .3s ease}
+}
+</style>
+</head>
+<body>
+
+<div class="app" id="app"></div>
+<nav class="nav" aria-label="Bereiche">
+  <div class="nav-in">
+    <button aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg>Tag</button>
+    <button data-later="Woche"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 18V10M10 18V6M15 18v-5M20 18V8"/></svg>Woche</button>
+    <button data-later="Monat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg>Monat</button>
+    <button data-later="Jahr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg>Jahr</button>
+  </div>
+</nav>
+<button class="pixel" id="pixel" aria-label="Messanzeige und Demo-Steuerung"></button>
+<div id="layer"></div>
+
+<script>
+/* ---------- Hilfen ---------- */
+const pad=n=>String(n).padStart(2,"0");
+const hhmm=m=>{m=((Math.round(m)%1440)+1440)%1440;return pad(Math.floor(m/60))+":"+pad(m%60)};
+const dur=m=>{m=Math.round(Math.abs(m));return Math.floor(m/60)+":"+pad(m%60)};
+const signed=m=>(Math.round(m)>0?"+":Math.round(m)<0?"−":"")+dur(m)+" h";
+const clamp=(n,a,b)=>Math.min(b,Math.max(a,n));
+const legalPause=w=>w>540?45:w>360?30:0;          // § 4 ArbZG
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+const ICON={
+  gear:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
+  exit:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4M10 16l4-4-4-4M14 12H4"/></svg>',
+  enter:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h4M14 16l4-4-4-4M18 12H8"/></svg>',
+  pause:'<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1.2"/><rect x="14" y="5" width="4" height="14" rx="1.2"/></svg>',
+  play:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13a1 1 0 0 0 1.5.9l10-6.5a1 1 0 0 0 0-1.7l-10-6.6A1 1 0 0 0 8 5.5z"/></svg>',
+  edit:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/></svg>'
+};
+
+/* ---------- Beispieldaten (Do. 01.10.2026) ---------- */
+const SETTINGS={target:480,planStart:395,plannedPause:30,fridayTarget:360,fridayPause:15,weekTarget:38*60};
+const WEEK_PAST=[{d:"Mo 28.09.",bal:20},{d:"Di 29.09.",bal:15},{d:"Mi 30.09.",bal:10}];
+const VACATION={from:"Mo 19.10.",to:"Fr 23.10.",days:18,workdays:5,rest:12,ent:30};
+
+const SCENARIOS={
+  pre:  {label:"Vor Beginn",     now:380, start:null, end:null, pauses:[]},
+  late: {label:"Vergessen",      now:412, start:null, end:null, pauses:[]},
+  run:  {label:"Läuft",          now:680, start:395,  end:null, pauses:[{s:540,e:555}]},
+  pause:{label:"Pause läuft",    now:735, start:395,  end:null, pauses:[{s:540,e:555},{s:720,e:null}]},
+  over: {label:"Soll erreicht",  now:935, start:395,  end:null, pauses:[{s:540,e:555},{s:720,e:740}]},
+  done: {label:"Feierabend",     now:950, start:395,  end:945,  pauses:[{s:540,e:555},{s:720,e:740}]}
+};
+let scen="run";
+let S=structuredClone(SCENARIOS.run);
+let live=false;
+let undoSnap=null,toastTimer=null;
+
+/* ---------- Rechnen ---------- */
+function calc(){
+  const now=S.now;
+  const ref=S.end??now;
+  const pauses=S.pauses.filter(p=>p.s<ref);
+  const used=pauses.reduce((a,p)=>a+Math.max(0,Math.min(p.e??ref,ref)-p.s),0);
+  const running=!S.end&&pauses.some(p=>p.e==null);
+  // Prognose: echte Pause, aber mindestens geplante bzw. gesetzliche Pause
+  const projPause=Math.max(used,SETTINGS.plannedPause,legalPause(SETTINGS.target));
+  const plannedEnd=S.start!=null?S.start+SETTINGS.target+projPause:null;
+  const worked=S.start!=null?Math.max(0,ref-S.start-used):0;
+  const balance=worked-SETTINGS.target;
+  const remaining=plannedEnd!=null?Math.max(0,plannedEnd-now):0;
+  const latest=S.start!=null?S.start+600+Math.max(used,45):null;
+  // Woche: laufender Tag zählt erst ab Soll (kein Minus am Morgen)
+  const past=WEEK_PAST.reduce((a,x)=>a+x.bal,0);
+  const todayPart=S.end?balance:Math.max(0,balance);
+  const week=past+todayPart;
+  // Freitag: Rest des Wochensolls, wenn heute mindestens Soll gearbeitet wird
+  const friNeed=Math.max(0,SETTINGS.fridayTarget-week);
+  const friEnd=SETTINGS.planStart+friNeed+(friNeed>360?legalPause(friNeed):SETTINGS.fridayPause);
+  return {now,ref,pauses,used,running,projPause,plannedEnd,worked,balance,remaining,latest,past,todayPart,week,friNeed,friEnd};
+}
+
+/* ---------- Darstellung ---------- */
+function timelineHTML(c){
+  const start=S.start;
+  const axisEnd=S.end??Math.max(c.plannedEnd,c.now);
+  const span=Math.max(1,axisEnd-start);
+  const pct=m=>clamp((m-start)/span*100,0,100);
+  let ticks="";
+  for(let m=Math.ceil(start/30)*30;m<axisEnd;m+=30){
+    if(m<=start) continue;
+    ticks+=`<i class="tick${m%60?" half":""}" style="left:${pct(m)}%"></i>`;
+  }
+  const blocks=c.pauses.map(p=>{
+    const e=Math.min(p.e??c.ref,c.ref);
+    return {l:pct(p.s),w:Math.max(.8,pct(e)-pct(p.s)),c:pct((p.s+e)/2),run:p.e==null&&!S.end,
+      label:p.e==null&&!S.end?`seit ${hhmm(p.s)}`:`${hhmm(p.s)}–${hhmm(e)}`};
+  });
+  // Beschriftungen auf Zeilen verteilen, damit nichts übereinander liegt
+  const lanes=[];
+  blocks.forEach(b=>{
+    let lane=lanes.findIndex(last=>b.c-last>30);
+    if(lane<0){lane=lanes.length;lanes.push(b.c)}else lanes[lane]=b.c;
+    b.lane=lane;
+  });
+  const sollMark=!S.end&&axisEnd>c.plannedEnd?`<i class="soll-mark" style="left:${pct(c.plannedEnd)}%" title="Soll erreicht ${hhmm(c.plannedEnd)}"></i>`:"";
+  const now=S.end?"":`<i class="now" style="left:${pct(c.now)}%"></i>`;
+  return `
+  <div>
+    <div class="tl-ends"><span>Beginn<b>${hhmm(start)}</b></span><span class="right">${S.end?"Ende":c.balance>=0?"Soll":"Feierabend"}<b>${hhmm(S.end??c.plannedEnd)}</b></span></div>
+    <div class="track" role="img" aria-label="Arbeitstag von ${hhmm(start)} bis ${hhmm(axisEnd)}">
+      <div class="track-clip">
+        <div class="fill" style="width:${pct(c.ref)}%"></div>
+        ${blocks.map(b=>`<i class="pz${b.run?" running":""}" style="left:${b.l}%;width:${b.w}%"></i>`).join("")}
+        ${ticks}
+      </div>
+      ${sollMark}${now}
+    </div>
+    ${blocks.length?`<div class="pz-labels" style="height:${lanes.length*20}px">${blocks.map(b=>`<span class="pz-label" style="left:${clamp(b.c,12,88)}%;top:${b.lane*20}px">${b.label}</span>`).join("")}</div>`:""}
+  </div>`;
+}
+
+function heroHTML(c){
+  let kicker="Feierabend um",main=hhmm(c.plannedEnd),sub=`noch ${dur(c.remaining)} h`,chip='<span class="chip run">läuft</span>',cls="";
+  if(c.running) chip='<span class="chip pause">Pause läuft</span>';
+  if(S.end){
+    kicker="Feierabend gemacht";main=hhmm(S.end);cls=" neutral";
+    sub=`Saldo heute <span class="${c.balance>=0?"pos":"neg"}">${signed(c.balance)}</span>`;
+    chip='<span class="chip done">erledigt</span>';
+  }else if(c.balance>=0){
+    kicker="Soll erreicht seit";main=hhmm(c.plannedEnd);
+    sub=`<span class="pos">${signed(c.balance)}</span> <span>Zeitplus</span>`;
+    if(!c.running) chip='<span class="chip run">Plus läuft</span>';
+  }
+  return `<section class="hero" aria-label="Heute">
+    <div class="hero-head"><span class="kicker">${kicker}</span>${chip}</div>
+    <div class="hero-time${cls}">${main}</div>
+    <div class="hero-sub">${sub}</div>
+    ${timelineHTML(c)}
+    <div class="meta">
+      <span>Arbeit <b>${dur(c.worked)}</b> / ${dur(SETTINGS.target)} h</span>
+      <span class="pz-meta">Pause <b>${c.used}</b> / ${c.projPause} Min</span>
+    </div>
+  </section>`;
+}
+
+function startHTML(c){
+  const forgot=S.now>SETTINGS.planStart&&S.now-SETTINGS.planStart<=240;
+  const planEnd=SETTINGS.planStart+SETTINGS.target+Math.max(SETTINGS.plannedPause,legalPause(SETTINGS.target));
+  return `<section class="start-card">
+    <span class="kicker">Noch nicht gestartet</span>
+    <div class="plan-line"><span>Geplant</span><b>${hhmm(SETTINGS.planStart)} – ${hhmm(planEnd)}</b></div>
+    <button class="btn primary wide" id="clockIn">${ICON.enter}Kommen ${hhmm(S.now)}</button>
+    ${forgot?`<button class="btn ghost" id="clockInPlan">Kommen um ${hhmm(SETTINGS.planStart)} <small>vergessen zu stempeln</small></button>`:""}
+  </section>`;
+}
+
+function actionsHTML(c){
+  const done=!!S.end;
+  return `<section class="actions">
+    <button class="btn primary" id="finish" ${done?"disabled":""}>${ICON.exit}${done?"Erledigt":"Feierabend"}</button>
+    <button class="btn pause${c.running?" active":""}" id="pauseBtn" ${done?"disabled":""}>${c.running?ICON.play:ICON.pause}${c.running?"Weiter":"Pause"}</button>
+    <button class="btn" id="editBtn">${ICON.edit}Ändern</button>
+  </section>`;
+}
+
+function hintHTML(c){
+  if(S.start==null||S.end) return "";
+  if(c.worked>=360&&c.used<30) return `<div class="hint warn"><i></i><span><b>Pause fehlt:</b> ab 6 h Arbeit sind 30 Min vorgeschrieben, bisher ${c.used} Min.</span></div>`;
+  if(c.balance>=0){
+    const left=c.latest-c.now;
+    return `<div class="hint${left<=30?" alert":""}"><i></i><span>Höchstgrenze 10 h: spätestens <b>${hhmm(c.latest)}</b> gehen.</span></div>`;
+  }
+  return "";
+}
+
+function stripHTML(c){
+  const wk=c.week;
+  return `<section class="strip" aria-label="Überblick">
+    <button class="tile" data-sheet="week"><span>Woche</span><b class="${wk>=0?"pos":"neg"}">${signed(wk).replace(" h","")}</b><small>${c.todayPart>0?"inkl. heute":"bis gestern"}</small></button>
+    <button class="tile" data-sheet="friday"><span>Freitag ab</span><b>${hhmm(c.friEnd)}</b><small>${dur(c.friNeed)} h nötig</small></button>
+    <button class="tile" data-sheet="vacation"><span>Urlaub in</span><b class="vac">${VACATION.days}<em class="unit"> Tage</em></b><small>ab ${VACATION.from}</small></button>
+  </section>`;
+}
+
+function render(){
+  const c=calc();
+  const d=new Date(2026,9,1);
+  document.getElementById("app").innerHTML=`
+    <header class="top">
+      <div class="top-date">Donnerstag, 01.10.<small>KW 40 · 2026</small></div>
+      <div class="top-right"><span class="top-clock num">${hhmm(S.now)}</span><button class="icon-btn" id="settings" aria-label="Einstellungen">${ICON.gear}</button></div>
+    </header>
+    ${S.start==null?startHTML(c):heroHTML(c)+actionsHTML(c)+hintHTML(c)}
+    ${stripHTML(c)}`;
+  updatePixel();
+}
+
+/* ---------- Sheets ---------- */
+function openSheet(html){
+  const layer=document.getElementById("layer");
+  layer.innerHTML=`<div class="scrim" id="scrim"><div class="sheet" role="dialog" aria-modal="true"><div class="grab"></div>${html}</div></div>`;
+  document.getElementById("scrim").addEventListener("click",e=>{if(e.target.id==="scrim")closeSheet()});
+}
+function closeSheet(){document.getElementById("layer").innerHTML=""}
+
+function sheetWeek(){
+  const c=calc();
+  openSheet(`<h3>Woche 40 · Saldo</h3>
+    <div class="rows">
+      ${WEEK_PAST.map(x=>`<div class="row"><span>${x.d}</span><b class="${x.bal>=0?"pos":"neg"}">${signed(x.bal)}</b></div>`).join("")}
+      <div class="row"><span>Do 01.10. ${S.end?"":"(läuft)"}</span><b>${S.start==null?"–":S.end?signed(c.balance):c.balance>=0?signed(c.balance):"zählt ab Soll"}</b></div>
+      <div class="row total"><span>Woche gesamt</span><b>${signed(c.week)}</b></div>
+    </div>
+    <p>Der laufende Tag zählt erst, wenn das Soll erreicht ist. So steht morgens kein künstliches Minus.</p>`);
+}
+function sheetFriday(){
+  const c=calc();
+  openSheet(`<h3>Freitag 02.10.</h3>
+    <div class="rows">
+      <div class="row"><span>Soll Freitag</span><b>${dur(SETTINGS.fridayTarget)} h</b></div>
+      <div class="row"><span>Plus aus der Woche</span><b class="pos">${signed(c.week)}</b></div>
+      <div class="row"><span>Noch nötig</span><b>${dur(c.friNeed)} h</b></div>
+      <div class="row"><span>Beginn · Pause</span><b>${hhmm(SETTINGS.planStart)} · ${c.friNeed>360?legalPause(c.friNeed):SETTINGS.fridayPause} Min</b></div>
+      <div class="row total"><span>Feierabend ab</span><b>${hhmm(c.friEnd)}</b></div>
+    </div>
+    <p>Annahme: heute wird mindestens das Soll gearbeitet. Wunschzeit für Freitag festlegen geht über „Woche planen“.</p>
+    <button class="btn ghost" data-later="Woche planen">Woche planen</button>`);
+}
+function sheetVacation(){
+  openSheet(`<h3>Nächster Urlaub</h3>
+    <div class="rows">
+      <div class="row"><span>Zeitraum</span><b>${VACATION.from} – ${VACATION.to}</b></div>
+      <div class="row"><span>Arbeitstage</span><b>${VACATION.workdays}</b></div>
+      <div class="row total"><span>Noch</span><b>${VACATION.days} Tage</b></div>
+      <div class="row"><span>Resturlaub 2026</span><b>${VACATION.rest} / ${VACATION.ent}</b></div>
+    </div>`);
+}
+function sheetPause(){
+  const c=calc();
+  const running=c.running;
+  openSheet(`<h3>Pause</h3>
+    <button class="btn ${running?"pause active":"primary"} wide" id="livePause">${running?ICON.play+"Pause beenden":ICON.pause+"Pause jetzt starten"}</button>
+    ${running?"":`<p>Oder Pause nachtragen, die gerade zu Ende ging:</p>
+    <div class="quick">${[15,20,30,45].map(m=>`<button data-quick="${m}">${m}<small>Min</small></button>`).join("")}</div>`}`);
+}
+function sheetDemo(){
+  openSheet(`<h3>Demo-Steuerung</h3>
+    <p>Nur für den Entwurf: Zustände durchspielen und Uhrzeit simulieren.</p>
+    <div class="seg" id="scenSeg">${Object.entries(SCENARIOS).map(([k,v])=>`<button data-scen="${k}" aria-pressed="${k===scen}">${v.label}</button>`).join("")}</div>
+    <label for="timeRange" class="kicker">Uhrzeit <span class="num" id="timeOut">${hhmm(S.now)}</span></label>
+    <input type="range" id="timeRange" min="300" max="1080" step="5" value="${S.now}">
+    <div class="seg"><button id="liveBtn" aria-pressed="${live}">Echte Uhrzeit</button></div>`);
+}
+
+/* ---------- Toast + Rückgängig ---------- */
+function toast(msg,undo){
+  clearTimeout(toastTimer);
+  const t=document.createElement("div");
+  t.className="toast";t.innerHTML=`<span>${esc(msg)}</span>${undo?'<button id="undoBtn">Rückgängig</button>':""}`;
+  document.querySelectorAll(".toast").forEach(x=>x.remove());
+  document.body.appendChild(t);
+  toastTimer=setTimeout(()=>{t.remove();undoSnap=null},6000);
+}
+function change(msg,fn){
+  undoSnap=structuredClone(S);
+  fn();render();toast(msg,true);
+}
+
+/* ---------- Aktionen ---------- */
+document.addEventListener("click",e=>{
+  const b=e.target.closest("button");
+  if(!b) return;
+  if(b.id==="clockIn") return change(`Kommen ${hhmm(S.now)} erfasst`,()=>{S.start=S.now});
+  if(b.id==="clockInPlan") return change(`Kommen ${hhmm(SETTINGS.planStart)} erfasst`,()=>{S.start=SETTINGS.planStart});
+  if(b.id==="finish") return change(`Feierabend ${hhmm(S.now)}`,()=>{S.pauses.forEach(p=>{if(p.e==null)p.e=S.now});S.end=S.now});
+  if(b.id==="pauseBtn"){
+    if(calc().running) return change(`Pause beendet ${hhmm(S.now)}`,()=>{S.pauses.forEach(p=>{if(p.e==null)p.e=S.now})});
+    return sheetPause();
+  }
+  if(b.id==="livePause"){
+    closeSheet();
+    if(calc().running) return change(`Pause beendet ${hhmm(S.now)}`,()=>{S.pauses.forEach(p=>{if(p.e==null)p.e=S.now})});
+    return change(`Pause seit ${hhmm(S.now)}`,()=>{S.pauses.push({s:S.now,e:null})});
+  }
+  if(b.dataset.quick){
+    const m=+b.dataset.quick;closeSheet();
+    return change(`${m} Min Pause eingetragen`,()=>{S.pauses.push({s:Math.max(S.start,S.now-m),e:S.now})});
+  }
+  if(b.id==="undoBtn"&&undoSnap){S=undoSnap;undoSnap=null;render();document.querySelectorAll(".toast").forEach(x=>x.remove());return}
+  if(b.dataset.sheet==="week") return sheetWeek();
+  if(b.dataset.sheet==="friday") return sheetFriday();
+  if(b.dataset.sheet==="vacation") return sheetVacation();
+  if(b.id==="editBtn") return toast("Tag bearbeiten kommt im nächsten Schritt");
+  if(b.id==="settings") return toast("Einstellungen kommen im nächsten Schritt");
+  if(b.dataset.later){closeSheet();return toast(`${b.dataset.later} kommt im nächsten Schritt`)}
+  if(b.id==="pixel") return sheetDemo();
+  if(b.dataset.scen){
+    scen=b.dataset.scen;S=structuredClone(SCENARIOS[scen]);live=false;render();sheetDemo();return;
+  }
+  if(b.id==="liveBtn"){live=!live;tickLive();render();sheetDemo();return}
+});
+document.addEventListener("input",e=>{
+  if(e.target.id!=="timeRange") return;
+  live=false;
+  S.now=+e.target.value;
+  if(S.start!=null&&S.now<S.start) S.now=S.start;
+  if(S.end!=null&&S.now<S.end) S.now=S.end;
+  document.getElementById("timeOut").textContent=hhmm(S.now);
+  render();
+});
+
+function tickLive(){
+  if(!live) return;
+  const d=new Date();S.now=d.getHours()*60+d.getMinutes();
+}
+setInterval(()=>{if(live){tickLive();render()}},15000);
+
+/* ---------- Pixel-Messanzeige ---------- */
+function updatePixel(){
+  const vv=window.visualViewport;
+  document.getElementById("pixel").textContent=`${innerWidth}×${innerHeight}`+(vv?` · vv ${Math.round(vv.width)}×${Math.round(vv.height)}`:"")+" · Demo";
+}
+addEventListener("resize",updatePixel);
+window.visualViewport?.addEventListener("resize",updatePixel);
+
+render();
+</script>
+</body>
+</html>
