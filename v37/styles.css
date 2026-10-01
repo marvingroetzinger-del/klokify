@@ -2741,3 +2741,24 @@ button:disabled{cursor:default;opacity:.5}
 .w-missing{font-style:italic}
 .w-fc{color:var(--lime);font-family:var(--font-ui);font-weight:600}
 .w-note{margin:2px 4px 0;font-size:var(--fs-s);color:var(--muted)}
+
+/* V37 Brückentag im Jahreskalender */
+.h-bf-banner{position:sticky;top:8px;z-index:6;display:flex;align-items:center;gap:12px;padding:10px 8px 10px 12px;border-radius:16px;background:#2b3326;border:1px solid rgba(182,226,76,.4);box-shadow:0 8px 20px rgba(0,0,0,.3)}
+.h-bf-txt{flex:1;min-width:0;display:flex;flex-direction:column}
+.h-bf-txt b{font-size:var(--fs-m)}
+.h-bf-txt>span{font-size:var(--fs-s);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.h-bf-legend{display:flex;align-items:center;gap:6px;margin-top:3px}
+.h-bf-legend i{display:inline-block;width:12px;height:12px;border-radius:3px}
+.h-bf-legend .lg-vac{background:var(--lime)}
+.h-bf-legend .lg-free{box-shadow:inset 0 0 0 2px var(--lime);margin-left:6px}
+.h-bf-actions{display:flex;flex-direction:column;align-items:center;gap:2px}
+.year-day.bf-free{box-shadow:inset 0 0 0 1.5px var(--lime)!important;color:var(--text)!important}
+.year-day.bf-vac{background:var(--lime)!important;color:#18210a!important}
+.year-month-card.bf-month{border-color:var(--lime)!important;box-shadow:0 0 0 1px var(--lime)}
+.h-bridge-row.focused{background:rgba(182,226,76,.08)}
+.year-calendar .year-month-card.bf-month{grid-column:1/-1;padding:12px}
+.year-month-card.bf-month .year-month-title span{font-size:var(--fs-m);font-weight:700}
+.year-month-card.bf-month .year-weekdays span{font-size:12px}
+.year-month-card.bf-month .year-days{gap:4px}
+.year-month-card.bf-month .year-day{font:600 14px/1 var(--font-num)!important;border-radius:6px!important;aspect-ratio:auto;min-height:32px}
+.year-month-card.bf-month .year-weekdays span{font-size:12px!important;font-weight:600}

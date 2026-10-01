@@ -70,7 +70,8 @@ function migrateState(){
 }
 
 let state = migrateState();
-let demo = null; // V37 Demo-Modus: {scen, nowMin}
+let demo = null;
+let bridgeFocus = null; // V37: im Jahreskalender hervorgehobene Brückentag-Gelegenheit // V37 Demo-Modus: {scen, nowMin}
 state.settings = {...freshDefaultSettings(),...(state.settings||{})};
 delete state.settings.durationFormat;
 state.settings.quickPausePresets=Array.isArray(state.settings.quickPausePresets)
@@ -1536,6 +1537,32 @@ function bridgeOpportunities(fromKey,days=430){
 const BRIDGE_SHORT_NAMES={"1. Weihnachtsfeiertag":"Weihnachten","2. Weihnachtsfeiertag":"Weihnachten","Christi Himmelfahrt":"Himmelfahrt","Heilige Drei Könige":"Hl. 3 Könige","Tag der Deutschen Einheit":"Einheit"};
 function bridgeName(n){return BRIDGE_SHORT_NAMES[n]||n;}
 function bridgeDate(key){const d=dateFromKey(key);return `${pad(d.getDate())}.${pad(d.getMonth()+1)}.`;}
+function bridgeAttr(o){return encodeURIComponent(JSON.stringify({id:o.id,from:o.from,to:o.to,vacFrom:o.vacFrom,vacTo:o.vacTo,vac:o.vac,total:o.total,names:o.names}));}
+function showBridge(o){
+  bridgeFocus=o;
+  monthSelectMode=false;monthSelectedDates.clear();
+  currentView="year";yearCursor=dateFromKey(o.vacFrom).getFullYear();
+  updateNav();render();
+  const m=dateFromKey(o.vacFrom).getMonth();
+  requestAnimationFrame(()=>{
+    window.scrollTo({top:0});
+    const card=document.querySelector(`.year-month-card[data-open-month="${m}"]`);
+    if(card) card.scrollIntoView({block:"center",behavior:"smooth"});
+  });
+}
+function bridgeBannerHTML(){
+  const o=bridgeFocus;
+  if(!o) return "";
+  return `<section class="h-bf-banner">
+    <div class="h-tip-n">${o.total}<small>Tage frei</small></div>
+    <div class="h-bf-txt"><b>für ${o.vac} Urlaubstag${o.vac===1?"":"e"}</b><span>${bridgeDate(o.vacFrom)}${o.vac>1?`–${bridgeDate(o.vacTo)}`:""} · ${escapeHtml(o.names.map(bridgeName).join(" + "))}</span>
+      <span class="h-bf-legend"><i class="lg-vac"></i>Urlaub nehmen <i class="lg-free"></i>frei</span></div>
+    <div class="h-bf-actions">
+      <button type="button" class="h-tip-btn" data-bridge-book="${o.vacFrom}|${o.vacTo}">Eintragen</button>
+      <button type="button" class="h-tip-x" data-bridge-clear aria-label="Hervorhebung schließen">×</button>
+    </div>
+  </section>`;
+}
 function bridgeShort(key){const d=dateFromKey(key);return `${weekdayName(d)} ${pad(d.getDate())}.${pad(d.getMonth()+1)}.`;}
 function bridgeVacText(o){return o.vac===1?bridgeShort(o.vacFrom):`${bridgeShort(o.vacFrom)} – ${bridgeShort(o.vacTo)}`;}
 function bridgeTip(){
@@ -1554,9 +1581,9 @@ function hBridgeTip(){
   if(!o) return "";
   const vt=`${o.vac} Urlaubstag${o.vac===1?"":"e"}`;
   return `<section class="h-tip">
-    <button type="button" class="h-tip-body" data-bridge-book="${o.vacFrom}|${o.vacTo}" aria-label="Urlaub eintragen">
+    <button type="button" class="h-tip-body" data-bridge-show="${bridgeAttr(o)}" aria-label="Im Jahreskalender zeigen">
       <span class="h-tip-n">${o.total}<small>Tage frei</small></span>
-      <span class="h-tip-main"><b>für ${vt}</b><span>${bridgeDate(o.vacFrom)}${o.vac>1?`–${bridgeDate(o.vacTo)}`:""} · ${escapeHtml(o.names.map(bridgeName).join(" + "))}</span><em>Antippen zum Eintragen ›</em></span>
+      <span class="h-tip-main"><b>für ${vt}</b><span>${bridgeDate(o.vacFrom)}${o.vac>1?`–${bridgeDate(o.vacTo)}`:""} · ${escapeHtml(o.names.map(bridgeName).join(" + "))}</span><em>Im Kalender ansehen ›</em></span>
     </button>
     <button type="button" class="h-tip-x" data-bridge-dismiss="${o.id}" aria-label="Tipp ausblenden">×</button>
   </section>`;
@@ -1571,7 +1598,7 @@ function bridgeYearHTML(year){
   if(!opts.length) return "";
   return `<section class="h-bridge card">
     <div class="h-bridge-head"><span class="h-kicker">Gute Gelegenheiten ${year}</span><small>Brückentage · BW</small></div>
-    ${opts.map(o=>`<button type="button" class="h-bridge-row" data-bridge-book="${o.vacFrom}|${o.vacTo}">
+    ${opts.map(o=>`<button type="button" class="h-bridge-row${bridgeFocus?.id===o.id?" focused":""}" data-bridge-show="${bridgeAttr(o)}">
       <span class="h-bridge-ratio"><b>${o.total}</b><small>Tage frei</small></span>
       <span class="h-bridge-txt"><b>${escapeHtml(o.names.map(bridgeName).join(" + "))}</b><span>für <strong>${o.vac} Urlaubstag${o.vac===1?"":"e"}</strong>: ${bridgeDate(o.vacFrom)}${o.vac>1?`–${bridgeDate(o.vacTo)}`:""}</span><span>frei von ${bridgeShort(o.from)} bis ${bridgeShort(o.to)}</span></span>
       <span class="h-bridge-go">›</span>
@@ -2262,6 +2289,9 @@ function yearMonthCalendar(year,month){
     else if(weekend) cls+=" weekend";
 
     if(today) cls+=" today";
+    if(bridgeFocus&&key>=bridgeFocus.from&&key<=bridgeFocus.to){
+      cls+=key>=bridgeFocus.vacFrom&&key<=bridgeFocus.vacTo&&bridgeDayInfo(key).work?" bf-vac":" bf-free";
+    }
     const title=bwHolidayName(key)||STATUS[status]?.label||"";
     if(monthSelectMode){
       const picked=monthSelectedDates.has(key);
@@ -2280,7 +2310,8 @@ function yearMonthCalendar(year,month){
     <div class="year-days">${days}</div>
   </article>`;
   }
-  return `<article class="year-month-card${isCurrent?" current":""}" data-open-month="${month}" data-open-year="${year}"
+  const bfMonth=bridgeFocus&&[bridgeFocus.from.slice(0,7),bridgeFocus.to.slice(0,7)].includes(`${year}-${pad(month+1)}`);
+  return `<article class="year-month-card${isCurrent?" current":""}${bfMonth?" bf-month":""}" data-open-month="${month}" data-open-year="${year}"
                    role="button" tabindex="0" aria-label="${mName} ${year} öffnen">
     <div class="year-month-title">
       <span>${["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"][month]}</span>
@@ -2344,6 +2375,7 @@ function renderYear(){
       <span class="year-subtle-label">${monthSelectMode?"Tage antippen zum Auswählen":"Monat antippen zum Öffnen"}</span>
     </div>
 
+    ${monthSelectMode?"":bridgeBannerHTML()}
     <section class="year-calendar${monthSelectMode?" selecting":""}">${months}</section>
     ${monthSelectMode?selectionPanelHTML():""}
 
@@ -2621,6 +2653,10 @@ function bindDynamic(){
     updateNav();render();window.scrollTo(0,0);
   }));
 
+  document.querySelectorAll("[data-bridge-show]").forEach(el=>el.addEventListener("click",()=>{
+    try{showBridge(JSON.parse(decodeURIComponent(el.dataset.bridgeShow)));}catch{}
+  }));
+  document.querySelectorAll("[data-bridge-clear]").forEach(el=>el.addEventListener("click",()=>{bridgeFocus=null;render();}));
   document.querySelectorAll("[data-bridge-book]").forEach(el=>el.addEventListener("click",()=>{
     const [from,to]=el.dataset.bridgeBook.split("|");
     openBulkVacation(from,to);
@@ -3608,7 +3644,7 @@ $("resetAllBtn").addEventListener("click",async()=>{
 
 /* ── Navigation ── */
 document.querySelectorAll(".nav-item").forEach(btn=>btn.addEventListener("click",()=>{
-  if(btn.dataset.view!==currentView){monthSelectMode=false;monthSelectedDates.clear();}
+  if(btn.dataset.view!==currentView){monthSelectMode=false;monthSelectedDates.clear();bridgeFocus=null;}
   currentView=btn.dataset.view;
   weekOffset=0;
   if(currentView==="month"){
