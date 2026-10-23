@@ -3131,6 +3131,10 @@ button:disabled{cursor:default;opacity:.5}
 .month-selection-actions .clear{color:var(--danger)}
 .h-mlist tr.fut td{opacity:.55}
 
+/* ── V38.6 Jahr ── */
+.h-ylist tr.future td{opacity:.55}
+.y-sum + .h-bridge{margin-top:0}
+
 </style>
 </head>
 <body>
@@ -6027,7 +6031,7 @@ function renderYearTable(year){
       <tbody>${rows}</tbody>
       <tfoot><tr><td>${year}</td><td>${fmtH(tot.soll)}</td><td>${fmtH(tot.ist)}</td><td class="${tot.bal>=0?"pos":"neg"}">${fmtSigned(tot.bal)}</td><td class="u">${tot.u||""}</td><td class="k">${tot.k||""}</td></tr></tfoot>
     </table>
-    <p class="h-mlist-note">Stunden dezimal · Summen über gebuchte Tage · U = Urlaubstage, K = Krankheitstage (inkl. geplant) · Zeile antippen = Monat öffnen</p>
+    <p class="h-mlist-note">= <b class="${tot.bal>=0?"pos":"neg"}">${hSigned(tot.bal)} h</b> · Stunden dezimal · Summen über gebuchte Tage · U = Urlaubstage, K = Krankheitstage (inkl. geplant) · Zeile antippen = Monat öffnen</p>
   </section>`;
 }
 function renderYear(){
@@ -6083,21 +6087,12 @@ function renderYear(){
 
   return `
     <div class="calendar-head">
-      <div>
-        <div class="muted small">Jahresübersicht</div>
-        <h2>${year}</h2>
-      </div>
-      <div class="month-nav"><button id="prevYear" aria-label="Vorheriges Jahr">‹</button><button id="nextYear" aria-label="Nächstes Jahr">›</button></div>
+      <h2>${year}</h2>
+      <div class="month-nav">${year===new Date().getFullYear()?"":`<button class="m-today" id="thisYearBtn">Dieses Jahr</button>`}<button id="prevYear" aria-label="Vorheriges Jahr">‹</button><button id="nextYear" aria-label="Nächstes Jahr">›</button></div>
     </div>
 
-    <section class="month-tools">
-      <button class="month-plan-btn" id="openBulkBtn">＋ Zeitraum</button>
-      <button class="month-secondary ${monthSelectMode?"active":""}" id="monthSelectBtn">${monthSelectMode?"Fertig":"Auswählen"}</button>
-      <button class="month-secondary" id="thisYearBtn" ${year===new Date().getFullYear()?"disabled":""}>Dieses Jahr</button>
-    </section>
-
     ${monthSelectMode||bridgeFocus?"":summary}
-    ${!monthSelectMode&&!bridgeFocus&&isFuture?bridgeYearHTML(year):""}
+    ${!monthSelectMode&&!bridgeFocus&&isFuture?bridgeYearHTML(year,3):""}
 
     ${monthSelectMode||bridgeFocus?"":`<div class="h-seg" role="tablist" aria-label="Darstellung">
       <button type="button" role="tab" data-year-mode="table" aria-selected="${!showCal}">Übersicht</button>
@@ -6105,11 +6100,15 @@ function renderYear(){
     </div>`}
 
     ${showCal?`
-      ${monthSelectMode?`<div class="year-calendar-title"><h3>Tage auswählen</h3><span class="year-subtle-label">Tage antippen, unten zuordnen</span></div>`:""}
       ${monthSelectMode?"":bridgeBannerHTML()}
       <section class="year-calendar${monthSelectMode?" selecting":" y-cal"}">${months}</section>
-      ${monthSelectMode?selectionPanelHTML():legend}
+      ${monthSelectMode?selectionPanelHTML(true):legend}
     `:renderYearTable(year)}
+
+    ${monthSelectMode||bridgeFocus?"":`<section class="m-acts">
+      <button type="button" class="month-secondary" id="openBulkBtn">＋ Zeitraum</button>
+      <button type="button" class="month-secondary" id="monthSelectBtn">Tage auswählen</button>
+    </section>`}
 
     ${monthSelectMode||bridgeFocus||isFuture?"":bridgeYearHTML(year,3)}
     ${monthSelectMode||bridgeFocus?"":holidayList}
