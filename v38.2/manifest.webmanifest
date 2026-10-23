@@ -1,0 +1,19 @@
+{
+  "name": "Klokify",
+  "short_name": "Klokify",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1b2027",
+  "theme_color": "#1b2027",
+  "description": "Klokify – Arbeitszeit, Pausen, Abwesenheiten und Zeitkonto",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
