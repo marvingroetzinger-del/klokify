@@ -3135,6 +3135,11 @@ button:disabled{cursor:default;opacity:.5}
 .h-ylist tr.future td{opacity:.55}
 .y-sum + .h-bridge{margin-top:0}
 
+/* ── V38.7 Schnellpause rückwirkend ── */
+.pz-chips .quick-pause-btn.pz-retro{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:60px}
+.pz-retro em{font:600 11px/1 var(--font-num);font-style:normal;color:var(--muted);white-space:nowrap}
+.pz-chips .quick-pause-btn.pz-retro:disabled{opacity:.45}
+
 </style>
 </head>
 <body>
@@ -6201,6 +6206,20 @@ function getQuickPausePresets(){
     .filter(v=>v>0);
 }
 
+function retroPauseCheck(rec,min){
+  const endMin=minutesFromTime(nowTime());
+  const startMin=endMin-min;
+  const workStart=minutesFromTime(rec.start);
+  if(startMin<0) return {ok:false,why:"vor Mitternacht"};
+  if(workStart!=null&&startMin<workStart) return {ok:false,why:"vor Beginn"};
+  const clash=(rec.pauses||[]).some(p=>{
+    if(!p.start||!p.end) return false;
+    const a=minutesFromTime(p.start),b=minutesFromTime(p.end);
+    return a!=null&&b!=null&&rangesOverlap(startMin,endMin,a,b);
+  });
+  if(clash) return {ok:false,why:"überschneidet"};
+  return {ok:true,start:timeFromMinutes(startMin),end:timeFromMinutes(endMin)};
+}
 function quickPauseButtonMarkup(min,attr="data-live-quick-pause"){
   return `<button type="button" class="quick-pause-btn" ${attr}="${min}">${min}<small> Min</small></button>`;
 }
@@ -6226,11 +6245,14 @@ function renderLivePauseDialog(){
   btn.className=`pz-big ${ap?"stop":"start"}`;
   btn.innerHTML=ap?`${H_ICON.play}Pause beenden <small>läuft ${runMin} Min</small>`:`${H_ICON.pause}Pause jetzt starten`;
   $("pauseQuickLabel").hidden=!!ap;
-  $("pauseQuickLabel").textContent=`Oder feste Dauer – startet jetzt (${now}), endet automatisch:`;
+  $("pauseQuickLabel").textContent=`Pause schon gemacht? Dauer antippen – wird bis jetzt (${now}) eingetragen:`;
   if(ap){
     grid.innerHTML="";
   }else if(presets.length){
-    grid.innerHTML=presets.map(min=>quickPauseButtonMarkup(min)).join("");
+    grid.innerHTML=presets.map(min=>{
+      const ck=retroPauseCheck(rec,min);
+      return `<button type="button" class="quick-pause-btn pz-retro" data-live-quick-pause="${min}"${ck.ok?"":" disabled"}>${min}<small> Min</small><em>${ck.ok?`${ck.start}–${ck.end}`:ck.why}</em></button>`;
+    }).join("");
   }else{
     grid.innerHTML='<div class="live-pause-running">Keine Schnellpausen eingerichtet (Einstellungen → Pause).</div>';
   }
@@ -6246,44 +6268,29 @@ function rangesOverlap(a1,a2,b1,b2){
 function bookLiveQuickPause(min){
   min=Math.max(1,Number(min)||0);
   if(!min) return;
-
   const key=localDateKey(new Date());
   const rec=ensureRecord(key);
   if(activePause(rec,key)){
     toast("Laufende Pause zuerst beenden");
     return;
   }
-
-  const start=nowTime();
-  const startMin=minutesFromTime(start);
-  const endMin=startMin+min;
-  const workStart=minutesFromTime(rec.start);
-
-  if(endMin>=1440){
-    notify("Eine Schnellpause über Mitternacht wird aktuell nicht unterstützt.");
+  const ck=retroPauseCheck(rec,min);
+  if(!ck.ok){
+    notify(ck.why==="vor Beginn"?`${min} Min würden vor deinem Arbeitsbeginn (${rec.start}) anfangen.`:ck.why==="überschneidet"?`${min} Min würden sich mit einer bereits erfassten Pause überschneiden.`:"Eine Pause über Mitternacht wird nicht unterstützt.");
     return;
   }
-  if(workStart!=null && startMin<workStart){
-    notify("Die Schnellpause kann nicht vor deinem Arbeitsbeginn starten.");
-    return;
-  }
-
-  const conflicts=(rec.pauses||[]).some(p=>{
-    if(!p.start || !p.end) return false;
-    const a=minutesFromTime(p.start),b=minutesFromTime(p.end);
-    return a!=null && b!=null && rangesOverlap(startMin,endMin,a,b);
-  });
-  if(conflicts){
-    notify("Diese Schnellpause würde sich mit einer bereits erfassten Pause überschneiden.");
-    return;
-  }
-
-  const end=timeFromMinutes(endMin);
-  rec.pauses.push({start,end,autoEnd:true});
+  if(!rec.start) rec.start=ck.start;
+  const p={start:ck.start,end:ck.end};
+  rec.pauses.push(p);
   save();
   $("pauseDialog").close();
   render();
-  toast(`${min} Min Schnellpause · ${start}–${end}`);
+  toast(`${min} Min Pause eingetragen · ${ck.start}–${ck.end}`,{label:"Rückgängig",run:()=>{
+    const r=state.records[key];
+    const i=(r?.pauses||[]).findIndex(x=>x.start===p.start&&x.end===p.end);
+    if(i>=0) r.pauses.splice(i,1);
+    save();render();toast("Pause entfernt");
+  }});
 }
 
 
