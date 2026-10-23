@@ -3085,6 +3085,52 @@ button:disabled{cursor:default;opacity:.5}
 .wp-del{min-height:48px;border:1px solid rgba(240,118,114,.4);border-radius:14px;background:none;color:var(--danger);display:grid;place-items:center;padding:0}
 .wp-del[hidden]{display:none}
 
+/* ── V38.5 Monat ── */
+.month-nav .m-today{width:auto;padding:0 14px;font:700 var(--fs-s)/1 var(--font-ui)}
+.m-sum .val.pos{color:var(--lime)} .m-sum .val.neg{color:var(--danger)}
+.m-cnts{display:flex;flex-wrap:wrap;gap:4px 14px}
+.m-cnt b{color:var(--text)}
+.m-cnt.vacation{color:var(--orange)} .m-cnt.sick{color:var(--danger)} .m-cnt.flex{color:var(--violet)}
+.m-cnt.holiday,.m-cnt.specialLeave{color:var(--blue)}
+.m-cal{padding:10px 8px}
+.m-cal .weekdays{font-size:var(--fs-s);color:var(--muted)}
+.m-cal .calendar-grid{gap:4px}
+.m-cal .calendar-day{min-height:52px;padding:6px 2px;border-radius:10px;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;background:var(--panel2)}
+.m-cal .calendar-day .num{font:700 var(--fs-m)/1 var(--font-num);color:var(--text)}
+.m-cal .calendar-day .day-work{margin:0;font:600 11px/1 var(--font-num);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.m-cal .calendar-day.we,.m-cal .calendar-day.empty{background:none}
+.m-cal .calendar-day.we .num{color:var(--muted)}
+.m-cal .calendar-day.sick{background:rgba(240,118,114,.18)} .m-cal .calendar-day.sick .day-work{color:var(--danger)}
+.m-cal .calendar-day.vacation{background:rgba(242,168,63,.18)} .m-cal .calendar-day.vacation .day-work{color:var(--orange)}
+.m-cal .calendar-day.holiday,.m-cal .calendar-day.autoHoliday,.m-cal .calendar-day.specialLeave{background:rgba(125,184,242,.16)}
+.m-cal .calendar-day.holiday .day-work,.m-cal .calendar-day.autoHoliday .day-work,.m-cal .calendar-day.specialLeave .day-work{color:var(--blue)}
+.m-cal .calendar-day.flex{background:rgba(169,133,255,.16)} .m-cal .calendar-day.flex .day-work{color:var(--violet)}
+.m-cal .calendar-day.off{background:none;box-shadow:inset 0 0 0 1px var(--line)}
+.m-cal .calendar-day.today{border-color:var(--lime)}
+.m-cal .calendar-day.selected{background:var(--lime)}
+.m-cal .calendar-day.selected .num,.m-cal .calendar-day.selected .day-work{color:#18210a}
+.m-strip{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;background:var(--panel);border-radius:14px;padding:10px 12px}
+.m-strip div{display:flex;flex-direction:column;gap:3px;min-width:0}
+.m-strip div>b{font-size:var(--fs-m)}
+.m-strip span{font-size:var(--fs-s);color:var(--muted)}
+.m-strip span b{font:700 var(--fs-m)/1 var(--font-num);color:var(--text)}
+.m-strip span b.pos{color:var(--lime)} .m-strip span b.neg{color:var(--danger)}
+.m-edit{border:0;border-radius:10px;padding:12px;background:var(--panel2);color:var(--text);font:700 var(--fs-s)/1 var(--font-ui);white-space:nowrap}
+.m-hol{display:flex;flex-direction:column;gap:2px;font-size:var(--fs-s);color:var(--muted);padding:0 4px}
+.m-hol b{color:var(--blue)}
+.m-acts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.m-acts button{min-height:46px}
+.m-selbar .month-selection-head span{font-size:var(--fs-s)}
+.m-selbtns{display:flex;gap:6px;align-items:center}
+.m-selbtns .selection-clear{font-size:var(--fs-s)}
+.m-done{border:0;border-radius:10px;padding:10px 14px;background:var(--lime);color:#18210a;font:700 var(--fs-s)/1 var(--font-ui)}
+.m-selbar .month-selection-actions button{min-height:44px;font:700 var(--fs-s)/1 var(--font-ui)}
+.month-selection-actions .vacation{color:var(--orange)}
+.month-selection-actions .specialLeave{color:var(--blue)}
+.month-selection-actions .flex{color:var(--violet)}
+.month-selection-actions .clear{color:var(--danger)}
+.h-mlist tr.fut td{opacity:.55}
+
 </style>
 </head>
 <body>
@@ -5732,7 +5778,7 @@ function renderMonthList(y,m){
     mon.soll+=r.sumSoll;mon.ist+=r.sumIst;mon.bal+=r.sumBal;
     const today=key===localDateKey(new Date());
     const balCls=r.counts?(r.balNum>=0?"pos":"neg"):"muted";
-    html+=`<tr class="${r.cls}${today?" today":""}" data-edit-day="${key}">
+    html+=`<tr class="${r.cls}${today?" today":""}${key>localDateKey(new Date())?" fut":""}" data-edit-day="${key}">
       <td class="d"><b>${weekdayName(r.d)}</b> ${pad(r.d.getDate())}.</td>
       <td class="w">${escapeHtml(r.what)}</td>
       <td>${r.pause}</td>
@@ -5749,7 +5795,7 @@ function renderMonthList(y,m){
       <tbody>${html}</tbody>
       <tfoot><tr><td colspan="3">${monthName(m)}</td><td>${fmtH(mon.soll)}</td><td>${fmtH(mon.ist)}</td><td class="${mon.bal>=0?"pos":"neg"}">${fmtSigned(mon.bal)}</td></tr></tfoot>
     </table>
-    <p class="h-mlist-note">Stunden dezimal (8,25 = 8 h 15 min) · Pause in Min · Summen über gebuchte Tage · Zeile antippen = bearbeiten${homeOpt("konto")?` · Konto gesamt <b class="${kontoBalance()>=0?"pos":"neg"}">${fmtSigned(kontoBalance())}</b>`:""}</p>
+    <p class="h-mlist-note">= <b class="${mon.bal>=0?"pos":"neg"}">${hSigned(mon.bal)} h</b> · Stunden dezimal (8,25 = 8 h 15 min) · Pause in Min · Summen über gebuchte Tage · Zeile antippen = bearbeiten${homeOpt("konto")?` · Konto gesamt <b class="${kontoBalance()>=0?"pos":"neg"}">${fmtSigned(kontoBalance())}</b>`:""}</p>
   </section>`;
 }
 function renderMonth(){
@@ -5768,6 +5814,7 @@ function renderMonth(){
     const multiSelected=monthSelectedDates.has(k);
     const cls=[
       status!=="empty"?status:"",
+      status==="empty"&&[0,6].includes(dt.getDay())?"we":"",
       autoHoliday?"autoHoliday":"",
       k===localDateKey(new Date())?"today":"",
       !monthSelectMode&&k===selectedDate?"selected":"",
@@ -5776,14 +5823,14 @@ function renderMonth(){
     ].join(" ");
 
     let small="";
-    if(status==="work"&&rec) small=formatCompact(c.worked);
+    if(status==="work"&&rec&&(rec.end||isManualWorkRecord(rec)||k===localDateKey(new Date()))) small=hDur(c.worked);
     else if(status==="holiday") small="Feiertag";
     else if(status!=="empty") small=STATUS[status].label;
 
     const aria=bwHolidayName(k)?` aria-label="${escapeHtml(bwHolidayName(k))}" title="${escapeHtml(bwHolidayName(k))}"`:"";
     cells+=`<button class="calendar-day ${cls}" data-select-day="${k}"${aria}>
-      <span class="num">${d}</span><span class="dot"></span>
-      <span class="day-work">${small}</span>
+      <span class="num">${d}</span>
+      <span class="day-work">${small||"&nbsp;"}</span>
       ${multiSelected?'<span class="multi-check">✓</span>':""}
     </button>`;
   }
@@ -5792,83 +5839,84 @@ function renderMonth(){
   const selectedCalc=recordCalc(selectedDate,selectedDate===localDateKey(new Date()));
   const selectedRec=state.records[selectedDate],sd=dateFromKey(selectedDate);
 
-  const selectionPanel=monthSelectMode?selectionPanelHTML():"";
+  const selectionPanel=monthSelectMode?selectionPanelHTML(true):"";
+  const now=new Date(),todayK=localDateKey(now);
+  const isCur=y===now.getFullYear()&&m===now.getMonth();
+  const isFut=first>now;
+  const counts=[["vacation","Urlaub"],["specialLeave","Sonderurlaub"],["sick","Krank"],["flex","FZA"],["holiday","Feiertag"],["off","Frei"]]
+    .filter(([k])=>stats[k]).map(([k,l])=>`<span class="m-cnt ${k}">${l} <b>${stats[k]}</b></span>`).join("");
+  const konto=homeOpt("konto")?kontoBalance():null;
+  const hero=`<section class="h-hero w-sum m-sum">
+      <div class="h-c">
+        <div class="h-c-big"><span>Saldo ${monthName(m)}</span><b class="${stats.balance>=0?"":"neg"}">${hSigned(stats.balance)}<small> h</small></b><span>${isFut?"noch nichts gebucht":isCur?"bis heute":"abgeschlossen"}</span></div>
+        <div class="h-c-rows">
+          <div class="h-c-row"><span>Arbeit</span><div class="val">${hDur(stats.worked)}<em>von ${hDur(stats.target)}</em></div><div class="h-bar"><i class="lime" style="width:${stats.target?clamp(stats.worked/stats.target*100,0,100):0}%"></i></div></div>
+          ${konto===null?"":`<div class="h-c-row"><span>Konto</span><div class="val ${konto>=0?"pos":"neg"}">${hSigned(konto)} h<em>gesamt</em></div></div>`}
+        </div>
+      </div>
+      ${counts?`<div class="y-extras m-cnts">${counts}</div>`:""}
+    </section>`;
 
-  const holidayBlock = state.settings.autoHolidaysBW
-    ? `<section class="month-holiday-list card">
-        <h3>Feiertage ${monthName(m)}</h3>
-        ${holidays.length
-          ? holidays.map(h=>`<div class="month-holiday-row"><span>${dateShortDE(h.key)}</span><span>${escapeHtml(h.name)}</span></div>`).join("")
-          : `<div class="holiday-empty">Keine gesetzlichen Feiertage in diesem Monat.</div>`}
-      </section>`
-    : `<section class="month-holiday-list card"><div class="holiday-empty">Automatische Feiertage sind in den Einstellungen ausgeschaltet.</div></section>`;
+  let stripBody="";
+  const sTarget=targetForDate(selectedDate);
+  if(selectedStatus==="work"&&selectedRec&&(selectedRec.start||isManualWorkRecord(selectedRec))){
+    const what=isManualWorkRecord(selectedRec)?"Sammelbuchung":`${selectedRec.start}–${selectedRec.end||(selectedDate===todayK?"läuft":"offen")}`;
+    stripBody=`${what} · <b>${hDur(selectedCalc.worked)} h</b> · <b class="${selectedCalc.balance>=0?"pos":"neg"}">${hSigned(selectedCalc.balance)}</b>`;
+  }else if(selectedStatus!=="empty"){
+    const hol=bwHolidayName(selectedDate);
+    stripBody=`${STATUS[selectedStatus].label}${hol&&selectedStatus==="holiday"?` · ${escapeHtml(hol)}`:""}${recordIsCreditedStatus(selectedStatus)&&selectedDate<=todayK&&selectedCalc.worked?` · <b>${hDur(selectedCalc.worked)} h</b> gutgeschrieben`:""}`;
+  }else{
+    stripBody=sTarget?(selectedDate<todayK?"kein Eintrag":"noch nichts eingetragen"):"frei";
+  }
+  if(selectedRec?.note) stripBody+=` · ${escapeHtml(selectedRec.note)}`;
+  const strip=`<section class="m-strip">
+      <div><b>${weekdayName(sd)} ${pad(sd.getDate())}.${pad(sd.getMonth()+1)}.</b><span>${stripBody}</span></div>
+      <button type="button" class="m-edit" data-edit-day="${selectedDate}">Bearbeiten ›</button>
+    </section>`;
+  const holLine=state.settings.autoHolidaysBW&&holidays.length
+    ? `<div class="m-hol">${holidays.map(h=>`<span><b>◆ ${dateShortDE(h.key)}</b> ${escapeHtml(h.name)}</span>`).join("")}</div>`:"";
+  const acts=`<section class="m-acts">
+      <button type="button" class="month-secondary" id="openBulkBtn">＋ Zeitraum</button>
+      <button type="button" class="month-secondary" id="monthSelectBtn">Tage auswählen</button>
+    </section>`;
 
   return `
     <div class="calendar-head">
       <h2>${monthName(m)} ${y}</h2>
-      <div class="month-nav"><button id="prevMonth">‹</button><button id="nextMonth">›</button></div>
+      <div class="month-nav">${isCur?"":`<button class="m-today" id="todayMonthBtn">Heute</button>`}<button id="prevMonth" aria-label="Vorheriger Monat">‹</button><button id="nextMonth" aria-label="Nächster Monat">›</button></div>
     </div>
 
-    <section class="month-tools">
-      <button class="month-plan-btn" id="openBulkBtn">＋ Zeitraum</button>
-      <button class="month-secondary ${monthSelectMode?"active":""}" id="monthSelectBtn">${monthSelectMode?"Fertig":"Auswählen"}</button>
-      <button class="month-secondary" id="todayMonthBtn">Heute</button>
-    </section>
+    ${hero}
 
     ${monthSelectMode?"":`<div class="h-seg" role="tablist" aria-label="Darstellung">
       <button type="button" role="tab" data-month-mode="cal" aria-selected="${monthMode!=="list"}">Kalender</button>
       <button type="button" role="tab" data-month-mode="list" aria-selected="${monthMode==="list"}">Liste</button>
     </div>`}
 
-    <section class="summary-grid">
-      <article class="summary-card card"><span>Ist bis heute</span><strong>${formatHours(stats.worked)}</strong></article>
-      <article class="summary-card card"><span>Soll bis heute</span><strong>${formatHours(stats.target)}</strong></article>
-      <article class="summary-card card"><span>Saldo</span><strong class="${stats.balance>=0?"positive":"negative"}">${formatSignedHours(stats.balance)}</strong></article>
-    </section>
-
-    <section class="month-status-summary card">
-      <span class="status-count vacation">🏖 U ${stats.vacation}</span>
-      <span class="status-count specialLeave">🌴 SU ${stats.specialLeave}</span>
-      <span class="status-count sick">✚ K ${stats.sick}</span>
-      <span class="status-count flex">↻ FZA ${stats.flex}</span>
-      <span class="status-count holiday">◆ FT ${stats.holiday}</span>
-    </section>
-
-    ${!monthSelectMode&&monthMode==="list"?renderMonthList(y,m):`<section class="calendar card">
+    ${!monthSelectMode&&monthMode==="list"?renderMonthList(y,m):`<section class="calendar card m-cal">
       <div class="weekdays"><div>Mo</div><div>Di</div><div>Mi</div><div>Do</div><div>Fr</div><div>Sa</div><div>So</div></div>
       <div class="calendar-grid">${cells}</div>
     </section>`}
 
-    ${selectionPanel}
-    ${holidayBlock}
-
-    ${monthSelectMode||monthMode==="list"?"":`<section class="month-detail card">
-      <h3>${pad(sd.getDate())}.${pad(sd.getMonth()+1)}.${sd.getFullYear()}</h3>
-      <div class="detail-row"><span>Status</span><strong>${selectedStatus==="empty"?"Kein Eintrag":STATUS[selectedStatus].label}</strong></div>
-      ${bwHolidayName(selectedDate)?`<div class="detail-row"><span>Feiertag</span><strong class="holiday-label">${escapeHtml(bwHolidayName(selectedDate))}</strong></div>`:""}
-      <div class="detail-row"><span>Ist</span><strong>${formatHours(selectedCalc.worked)}</strong></div>
-      <div class="detail-row"><span>Soll</span><strong>${formatHours(selectedCalc.target)}</strong></div>
-      <div class="detail-row"><span>Saldo</span><strong class="${selectedCalc.balance>=0?"positive":"negative"}">${formatSignedHours(selectedCalc.balance)}</strong></div>
-      ${selectedRec?.note?`<div class="detail-row"><span>Notiz</span><strong>${escapeHtml(selectedRec.note)}</strong></div>`:""}
-      <button class="ghost-btn full" data-edit-day="${selectedDate}" style="margin-top:12px">Tag bearbeiten / Eintrag löschen</button>
-    </section>`}
+    ${monthSelectMode?selectionPanel:`${monthMode==="list"?"":strip+holLine}${acts}`}
   `;
 }
 
-function selectionPanelHTML(){
+function selectionPanelHTML(withDone=false){
+  const n=monthSelectedDates.size;
   return `
-    <section class="month-selection-panel card sticky-selection">
+    <section class="month-selection-panel card sticky-selection m-selbar">
       <div class="month-selection-head">
-        <div><strong>${monthSelectedDates.size}</strong><span> Tag${monthSelectedDates.size===1?"":"e"} gewählt</span></div>
-        <button type="button" class="selection-clear" id="clearMonthSelection">Auswahl leeren</button>
+        <div><strong>${n}</strong><span> Tag${n===1?"":"e"} gewählt${n?" · Typ antippen":" · Tage antippen"}</span></div>
+        <div class="m-selbtns">${n?`<button type="button" class="selection-clear" id="clearMonthSelection">leeren</button>`:""}${withDone?`<button type="button" class="m-done" id="monthSelectBtn">Fertig</button>`:""}</div>
       </div>
       <div class="month-selection-actions">
-        <button class="vacation" data-month-apply="vacation">🏖 Urlaub</button>
-        <button class="specialLeave" data-month-apply="specialLeave">🌴 Sonderurlaub</button>
-        <button class="sick" data-month-apply="sick">✚ Krank</button>
-        <button class="flex" data-month-apply="flex">↻ FZA</button>
-        <button class="off" data-month-apply="off">○ Frei</button>
-        <button class="clear" data-month-apply="clear">× Kein Eintrag</button>
+        <button class="vacation" data-month-apply="vacation">Urlaub</button>
+        <button class="sick" data-month-apply="sick">Krank</button>
+        <button class="flex" data-month-apply="flex">FZA</button>
+        <button class="off" data-month-apply="off">Frei</button>
+        <button class="specialLeave" data-month-apply="specialLeave">Sonderurlaub</button>
+        <button class="clear" data-month-apply="clear">Löschen</button>
       </div>
     </section>`;
 }
