@@ -3140,6 +3140,13 @@ button:disabled{cursor:default;opacity:.5}
 .pz-retro em{font:600 11px/1 var(--font-num);font-style:normal;color:var(--muted);white-space:nowrap}
 .pz-chips .quick-pause-btn.pz-retro:disabled{opacity:.45}
 
+/* ── V38.8 Blättern speichert ── */
+.e-saved{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 12px;border-radius:12px;background:rgba(182,226,76,.12);font-size:var(--fs-s);color:var(--muted)}
+.e-saved[hidden]{display:none}
+.e-saved b{color:var(--lime)}
+.e-saved button{border:0;background:none;color:var(--text);font:700 var(--fs-s)/1 var(--font-ui);padding:6px 0;text-decoration:underline}
+.e-saved button[hidden]{display:none}
+
 </style>
 </head>
 <body>
@@ -3174,6 +3181,7 @@ button:disabled{cursor:default;opacity:.5}
         <div><b id="editDateLabel"></b><small id="editDateSub"></small></div>
         <button type="button" id="editNextDay" aria-label="Folgetag">›</button>
       </div>
+      <div class="e-saved" id="editSaved" hidden><span id="editSavedText"></span><button type="button" id="editSavedUndo">Rückgängig</button></div>
 
       <div class="e-types" id="editTypeChips" role="radiogroup" aria-label="Tagestyp"></div>
       <label class="e-hidden-select">Tagestyp
@@ -6950,6 +6958,7 @@ function editDraftSignature(){
 }
 function openEdit(key){
   if(!$("editDialog").open) captureEditOrigin();
+  $("editSaved").hidden=true;
   editDateKey=key;
   const existing=state.records[key];
   const rec=existing ? normalizeRecord({...existing,pauses:(existing.pauses||[]).map(p=>({...p}))}) : {
@@ -7152,16 +7161,26 @@ $("editDeleteBtn").addEventListener("click",async()=>{
 });
 async function stepEditDay(n){
   if(editDraftSignature()!==editDraftSig){
-    const ok=await askConfirm(`Änderungen am ${$("editDateLabel").textContent} speichern?`,{ok:"Speichern",cancel:"Verwerfen"});
-    if(ok){
-      if($("editStatus").value==="work"){
-        const v=validateWorkEditDraft();
-        if(v){showEditValidation(v.message,v.focusId);return;}
-      }
-      if(!commitEditDraft()) return;
-      render();
-      toast("Tag gespeichert");
+    if($("editStatus").value==="work"){
+      const v=validateWorkEditDraft();
+      if(v){showEditValidation(v.message,"");$("editValidation").scrollIntoView({block:"center",behavior:"smooth"});return;}
     }
+    const k=editDateKey,label=$("editDateLabel").textContent;
+    const before=state.records[k]?JSON.parse(JSON.stringify(state.records[k])):null;
+    if(!commitEditDraft()) return;
+    render();
+    const d0=dateFromKey(k);
+    openEdit(localDateKey(new Date(d0.getFullYear(),d0.getMonth(),d0.getDate()+n)));
+    $("editSavedText").innerHTML=`<b>${label}</b> gespeichert`;
+    $("editSaved").hidden=false;
+    $("editSavedUndo").hidden=false;
+    $("editSavedUndo").onclick=()=>{
+      if(before) state.records[k]=before; else delete state.records[k];
+      save();render();
+      $("editSavedText").innerHTML=`<b>${label}</b> zurückgesetzt`;
+      $("editSavedUndo").hidden=true;
+    };
+    return;
   }
   const d=dateFromKey(editDateKey);
   openEdit(localDateKey(new Date(d.getFullYear(),d.getMonth(),d.getDate()+n)));
