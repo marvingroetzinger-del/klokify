@@ -3003,6 +3003,45 @@ button:disabled{cursor:default;opacity:.5}
 .bk-btns{display:grid;grid-template-columns:1fr 2fr;gap:8px}
 .bk-btns button{min-height:52px;font-size:var(--fs-m)}
 
+/* ── V38.3 Tag bearbeiten ── */
+.edit37 .dialog-head h2{margin:0}
+.e-daynav{display:grid;grid-template-columns:44px minmax(0,1fr) 44px;gap:8px;align-items:center}
+.e-daynav button{width:44px;height:44px;border:0;border-radius:12px;background:var(--panel2);color:var(--text);font:700 var(--fs-l)/1 var(--font-ui)}
+.e-daynav div{text-align:center;min-width:0}
+.e-daynav b{display:block;font:700 var(--fs-l)/1.1 var(--font-num)}
+.e-daynav small{display:block;font-size:var(--fs-s);color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.edit37 .e-types{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.edit37 .e-type{padding:12px 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.e-ph{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:2px 0 8px}
+.e-ph h3{margin:0;font-size:var(--fs-m)}
+#editPauseSum{font-size:var(--fs-s);color:var(--muted);text-align:right}
+#editPauseSum.ok{color:var(--lime)}
+#editPauseSum.warn{color:var(--orange)}
+.edit37 .pause-edit-row,.edit37 .fixed-pause-row{display:grid;grid-template-columns:minmax(0,1fr) auto 40px;gap:6px;align-items:center;min-height:52px;padding:0 4px 0 6px;border-radius:12px;background:var(--panel2);border:0;margin:0 0 6px}
+.e-ptimes{display:flex;align-items:center;gap:0;min-width:0}
+.e-ptimes i{font-style:normal;color:var(--muted);padding:0 2px}
+.edit37 .pause-edit-row input{background:none!important;border:0!important;box-shadow:none!important;padding:0 4px!important;min-height:44px;font:700 var(--fs-l)/1 var(--font-num)!important;flex:0 1 auto;width:4.3em;min-width:0;color:var(--text)}
+.edit37 .pause-edit-row input::-webkit-calendar-picker-indicator{display:none}
+.e-pdur{font-size:var(--fs-s);color:var(--muted);white-space:nowrap}
+.edit37 .fixed-pause-row{grid-template-columns:minmax(0,1fr) auto 40px!important}
+.edit37 .pause-delete{width:40px;height:40px;border:0;border-radius:10px;background:none;color:var(--danger);font-size:20px}
+.edit37 .fixed-pause-label{display:flex;align-items:center;padding-left:6px}
+.edit37 .fixed-pause-label strong{font:700 var(--fs-l)/1 var(--font-num);color:var(--text)}
+.edit37 .no-pauses{font-size:var(--fs-s);color:var(--muted);margin:0 0 8px}
+.e-add{display:grid;grid-template-columns:repeat(4,minmax(0,1fr)) 1.5fr;gap:6px;margin-bottom:12px}
+.e-add .edit-quick-pause-row{display:contents}
+.edit37 .e-add button{min-height:44px;border:1px dashed var(--line);border-radius:10px;background:none;color:var(--text);padding:0 4px;font:700 var(--fs-m)/1.1 var(--font-num)!important}
+.edit37 .e-add #addPauseRowBtn{font:600 var(--fs-s)/1.1 var(--font-ui)!important}
+.edit37 .edit-advanced summary{font-weight:500;color:var(--muted)}
+.edit37 .edit-advanced summary b{color:var(--text)}
+.e-adv-sum.set{color:var(--orange)}
+.e-note .edit-advanced-panel input{width:100%}
+.edit37 .e-actions{grid-template-columns:52px 1fr 2fr;margin:0 -18px;padding-inline:18px}
+.edit37 .e-actions.no-del{grid-template-columns:1fr 2fr}
+.e-del{min-height:48px;border:1px solid rgba(240,118,114,.4);border-radius:14px;background:none;color:var(--danger);display:grid;place-items:center;padding:0}
+.e-del[hidden]{display:none}
+.e-preview .warn{display:block;color:var(--orange);margin-top:2px}
+
 </style>
 </head>
 <body>
@@ -3029,11 +3068,13 @@ button:disabled{cursor:default;opacity:.5}
   <dialog id="editDialog" class="dialog edit37">
     <form id="editForm">
       <div class="dialog-head">
-        <div>
-          <h2>Tag bearbeiten</h2>
-          <div class="muted small" id="editDateLabel"></div>
-        </div>
-        <button type="button" class="icon-btn mini" data-close="editDialog">×</button>
+        <h2>Tag bearbeiten</h2>
+        <button type="button" class="icon-btn mini" data-close="editDialog" aria-label="Schließen">×</button>
+      </div>
+      <div class="e-daynav">
+        <button type="button" id="editPrevDay" aria-label="Vortag">‹</button>
+        <div><b id="editDateLabel"></b><small id="editDateSub"></small></div>
+        <button type="button" id="editNextDay" aria-label="Folgetag">›</button>
       </div>
 
       <div class="e-types" id="editTypeChips" role="radiogroup" aria-label="Tagestyp"></div>
@@ -3056,17 +3097,18 @@ button:disabled{cursor:default;opacity:.5}
           <label><span class="e-lbl">Ende <button type="button" class="e-now" id="editEndNow" hidden>jetzt</button></span><input type="time" id="editEnd"></label>
         </div>
 
-        <div class="subhead-row pause-subhead-row">
+        <div class="e-ph">
           <h3>Pausen</h3>
-          <div class="pause-head-actions">
-            <div class="edit-quick-pause-row" id="editQuickPauseButtons"></div>
-            <button type="button" class="tiny-btn" id="addPauseRowBtn">+ Pause</button>
-          </div>
+          <span id="editPauseSum"></span>
         </div>
         <div id="pauseRows"></div>
+        <div class="e-add">
+          <div class="edit-quick-pause-row" id="editQuickPauseButtons"></div>
+          <button type="button" id="addPauseRowBtn">+ mit Uhrzeit</button>
+        </div>
 
         <details class="edit-advanced" id="editAdvanced">
-          <summary>Weitere Optionen</summary>
+          <summary><span><b>Sonderfälle</b> · <span class="e-adv-sum" id="editAdvSum"></span></span></summary>
           <div class="edit-advanced-panel">
         <div class="smart-pause-box">
           <div class="smart-pause-title">Pause nur als Dauer (eigener Wert)</div>
@@ -3094,12 +3136,16 @@ button:disabled{cursor:default;opacity:.5}
         </details>
       </div>
 
-      <label>Notiz <input type="text" id="editNote" maxlength="160" placeholder="optional"></label>
+      <details class="edit-advanced e-note" id="editNoteWrap">
+        <summary><b>+ Notiz</b></summary>
+        <div class="edit-advanced-panel"><input type="text" id="editNote" maxlength="160" placeholder="z. B. Montage Baustelle" aria-label="Notiz"></div>
+      </details>
 
       <div id="editValidation" class="edit-validation" role="alert" hidden></div>
 
       <div class="dialog-actions e-actions">
         <div class="e-preview" id="editPreview" aria-live="polite"></div>
+        <button type="button" class="e-del" id="editDeleteBtn" aria-label="Eintrag löschen" title="Eintrag löschen"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg></button>
         <button type="button" class="ghost-btn" data-close="editDialog">Abbrechen</button>
         <button type="submit" class="primary-small">Speichern</button>
       </div>
@@ -6561,7 +6607,7 @@ function renderPauseEditor(){
   const quick=$("editQuickPauseButtons");
   const presets=getQuickPausePresets();
 
-  quick.innerHTML=presets.map(min=>quickPauseButtonMarkup(min,"data-edit-quick-pause")).join("");
+  quick.innerHTML=presets.map(min=>`<button type="button" data-edit-quick-pause="${min}" aria-label="${min} Min Pause ohne Uhrzeit">+${min}</button>`).join("");
   quick.querySelectorAll("[data-edit-quick-pause]").forEach(btn=>btn.addEventListener("click",()=>{
     editPauses.push({start:"",end:"",minutes:Number(btn.dataset.editQuickPause)});
     renderPauseEditor();
@@ -6576,15 +6622,15 @@ function renderPauseEditor(){
     const fixed=Math.max(0,Number(p.minutes)||0);
     if(fixed>0 && !p.start){
       return `<div class="pause-edit-row fixed-pause-row">
-        <div class="fixed-pause-label"><span>⚡</span><strong>${fixed} Min</strong><small>Schnellpause</small></div>
-        <button type="button" class="pause-delete" data-delete-pause="${i}">×</button>
+        <div class="fixed-pause-label"><strong>${fixed} Min</strong></div>
+        <span class="e-pdur">ohne Uhrzeit</span>
+        <button type="button" class="pause-delete" data-delete-pause="${i}" aria-label="Pause löschen">×</button>
       </div>`;
     }
     return `<div class="pause-edit-row">
-      <input type="time" value="${p.start||""}" data-pause-start="${i}">
-      <span class="pause-sep">–</span>
-      <input type="time" value="${p.end||""}" data-pause-end="${i}">
-      <button type="button" class="pause-delete" data-delete-pause="${i}">×</button>
+      <span class="e-ptimes"><input type="time" value="${p.start||""}" data-pause-start="${i}" aria-label="Pause ${i+1} Beginn"><i>–</i><input type="time" value="${p.end||""}" data-pause-end="${i}" aria-label="Pause ${i+1} Ende"></span>
+      <span class="e-pdur" data-pause-dur="${i}"></span>
+      <button type="button" class="pause-delete" data-delete-pause="${i}" aria-label="Pause löschen">×</button>
     </div>`;
   }).join("");
 
@@ -6702,7 +6748,7 @@ function validateWorkEditDraft(){
 
 
 /* ── V37 Tag bearbeiten: Typ-Chips, „jetzt“, Live-Vorschau ── */
-const EDIT_TYPES=[["work","Arbeit"],["vacation","Urlaub"],["sick","Krank"],["flex","FZA"],["off","Frei"],["specialLeave","Sonderurlaub"],["holiday","Feiertag"],["clear","Kein Eintrag"]];
+const EDIT_TYPES=[["work","Arbeit"],["vacation","Urlaub"],["sick","Krank"],["flex","FZA"],["off","Frei"],["specialLeave","Sonderurl."],["holiday","Feiertag"]];
 function renderEditTypeChips(){
   const cur=$("editStatus").value;
   $("editTypeChips").innerHTML=EDIT_TYPES.map(([v,l])=>`<button type="button" class="e-type ${v}" data-edit-type="${v}" role="radio" aria-checked="${v===cur}">${l}</button>`).join("");
@@ -6712,40 +6758,85 @@ function renderEditTypeChips(){
     renderEditTypeChips();updateEditPreview();
   });
 }
+function updateEditAdvSum(){
+  const el=$("editAdvSum");
+  if(!el) return;
+  const parts=[];
+  const mp=parseWorkDurationInput($("editManualWorked").value);
+  if(mp&&!mp.error) parts.push(`Arbeitszeit direkt ${hDur(mp.minutes)} h`);
+  const raw=$("editTarget").value;
+  const t=Math.round((Number(raw)||0)*60);
+  if(raw!==""&&editDateKey&&t!==targetForDate(editDateKey)) parts.push(`Soll ${hDur(t)} h`);
+  el.textContent=parts.length?parts.join(" · "):"Pause nur als Dauer, Arbeitszeit direkt, Soll";
+  el.classList.toggle("set",parts.length>0);
+}
 function updateEditPreview(){
   const el=$("editPreview");
   if(!el) return;
+  updateEditAdvSum();
+  const sumEl=$("editPauseSum");
+  const setSum=(text,cls="")=>{sumEl.textContent=text;sumEl.className=cls;};
   const status=$("editStatus").value;
   const target=Math.round((Number($("editTarget").value)||0)*60);
   if(status==="clear"){el.innerHTML=`<span>Tag wird auf <b>Kein Eintrag</b> zurückgesetzt</span>`;return;}
   if(status!=="work"){
     const credited=["vacation","specialLeave","sick","holiday","flex"].includes(status);
-    el.innerHTML=credited?`<span>${STATUS[status].label} · <b>${hDur(target)} h</b> gutgeschrieben · Saldo <b class="pos">0:00</b></span>`:`<span>Frei · kein Soll</span>`;
+    let extra="";
+    if(status==="vacation"&&editDateKey){
+      const dd=dateFromKey(editDateKey),y=dd.getFullYear();
+      const counted=state.records[editDateKey]?.status==="vacation"||[0,6].includes(dd.getDay());
+      const free=vacationEntitlementTotal()-statusCountForYear(y,"vacation")-(counted?0:1);
+      extra=` · danach <b class="${free<0?"neg":""}">${String(free).replace(".",",")}</b> Urlaubstage frei`;
+    }
+    el.innerHTML=credited?`<span>${STATUS[status].label} · <b>${hDur(target)} h</b> gutgeschrieben · Saldo <b class="pos">0:00</b>${extra}</span>`:`<span>Frei · kein Soll</span>`;
     return;
   }
   const mp=parseWorkDurationInput($("editManualWorked").value);
   const manual=mp&&!mp.error?mp.minutes:null;
   const a=minutesFromTime($("editStart").value),eRaw=minutesFromTime($("editEnd").value);
   const isToday=editDateKey===localDateKey(new Date());
+  const running=isToday&&eRaw===null;
+  const e=eRaw!==null?eRaw:(isToday?minutesFromTime(nowTime()):null);
+  let pause=0;
+  const rowDur={};
+  editPauses.forEach((p,i)=>{
+    const fx=Number(p.minutes)||0;
+    if(fx&&!p.start){pause+=fx;return;}
+    const ps=minutesFromTime(p.start),pe=minutesFromTime(p.end)??(running?e:null);
+    if(ps===null||pe===null||pe<=ps||a===null||e===null){rowDur[i]=null;return;}
+    const m=Math.max(0,Math.min(pe,e)-Math.max(ps,a));
+    rowDur[i]=p.end?`${m} Min`:`läuft ${m} Min`;
+    pause+=m;
+  });
+  document.querySelectorAll("#pauseRows [data-pause-dur]").forEach(x=>{x.textContent=rowDur[x.dataset.pauseDur]||"–";});
   if(a===null&&manual){
+    setSum("");
     const bal=manual-target;
     el.innerHTML=`<span>Sammelbuchung <b>${hDur(manual)} h</b> · Saldo <b class="${bal>=0?"pos":"neg"}">${hSigned(bal)} h</b></span>`;return;
   }
-  if(a===null){el.innerHTML=`<span>Beginn fehlt noch</span>`;return;}
-  const e=eRaw!==null?eRaw:(isToday?minutesFromTime(nowTime()):null);
-  if(e===null){el.innerHTML=`<span>Ende fehlt noch</span>`;return;}
-  let pause=0;
-  editPauses.forEach(p=>{
-    const fx=Number(p.minutes)||0;
-    if(fx&&!p.start){pause+=fx;return;}
-    const ps=minutesFromTime(p.start),pe=minutesFromTime(p.end)??(isToday&&eRaw===null?e:null);
-    if(ps!==null&&pe!==null&&pe>ps) pause+=Math.min(pe,e)-Math.max(ps,a)>0?Math.min(pe,e)-Math.max(ps,a):0;
-  });
+  if(a===null){setSum(editPauses.length?`${pause} Min`:"");el.innerHTML=`<span>Beginn fehlt noch</span>`;return;}
+  if(e===null){setSum(editPauses.length?`${pause} Min`:"");el.innerHTML=`<span>Ende fehlt noch</span>`;return;}
   const worked=Math.max(0,e-a-pause),bal=worked-target;
-  el.innerHTML=`<span>${eRaw===null?"bis jetzt · ":""}Arbeit <b>${hDur(worked)} h</b> · Pause <b>${pause} Min</b> · Saldo <b class="${bal>=0?"pos":"neg"}">${hSigned(bal)} h</b></span>`;
+  const need=legalPauseFor(worked);
+  const warn=[];
+  if(need===0){
+    setSum(running?`${pause} Min · ab 6 h Pflicht 30`:`${pause} Min`);
+    if(running&&worked>=300&&pause<30) warn.push(`ab 6 h fehlen noch ${30-pause} Min Pause`);
+  }else if(pause>=need){
+    setSum(`${pause} Min · Pflicht ${need} ✓`,"ok");
+  }else{
+    setSum(`${pause} Min · Pflicht ${need} – fehlen ${need-pause}`,"warn");
+    warn.push(`über ${need===45?9:6} h: ${need} Min Pause Pflicht (fehlen ${need-pause})`);
+  }
+  if(worked>MAX_WORK_MIN) warn.push("über 10 h Arbeit");
+  el.innerHTML=`<span>${running?"bis jetzt · ":""}Arbeit <b>${hDur(worked)} h</b> · Pause <b>${pause} Min</b> · Saldo <b class="${bal>=0?"pos":"neg"}">${hSigned(bal)} h</b></span>${warn.length?`<span class="warn">${warn.join(" · ")}</span>`:""}`;
+}
+let editDraftSig="";
+function editDraftSignature(){
+  return JSON.stringify([$("editStatus").value,$("editStart").value,$("editEnd").value,$("editManualWorked").value,$("editTarget").value,$("editNote").value,editPauses]);
 }
 function openEdit(key){
-  captureEditOrigin();
+  if(!$("editDialog").open) captureEditOrigin();
   editDateKey=key;
   const existing=state.records[key];
   const rec=existing ? normalizeRecord({...existing,pauses:(existing.pauses||[]).map(p=>({...p}))}) : {
@@ -6753,7 +6844,10 @@ function openEdit(key){
     start:"",end:"",pauses:[],targetHours:targetForDate(key)/60,note:""
   };
   const d=dateFromKey(key);
-  $("editDateLabel").textContent=`${weekdayName(d,false)}, ${pad(d.getDate())}.${pad(d.getMonth()+1)}.${d.getFullYear()}`;
+  const nowD=new Date(),isTodayKey=key===localDateKey(nowD);
+  $("editDateLabel").textContent=`${weekdayName(d)} ${pad(d.getDate())}.${pad(d.getMonth()+1)}.${d.getFullYear()!==nowD.getFullYear()?d.getFullYear():""}`;
+  const hol=bwHolidayName(key);
+  $("editDateSub").textContent=[isTodayKey?"heute":"",`KW ${isoWeekNumber(d)}`,hol||`Soll ${hDur(targetForDate(key))} h`].filter(Boolean).join(" · ");
   $("editStatus").value=existing ? (rec.status||"work") : (bwHolidayName(key)?"holiday":"work");
   $("editStart").value=rec.start||"";
   $("editEnd").value=rec.end||"";
@@ -6764,6 +6858,9 @@ function openEdit(key){
     : "Nur für Nachträge ohne Beginn und Ende.";
   $("editTarget").value=typeof rec.targetHours==="number"?rec.targetHours:targetForDate(key)/60;
   $("editNote").value=rec.note||"";
+  $("editNoteWrap").open=!!rec.note;
+  $("editDeleteBtn").hidden=!existing;
+  $("editDeleteBtn").closest(".e-actions").classList.toggle("no-del",!existing);
   editPauses=(rec.pauses||[]).map(p=>{
     const fixed=Math.max(0,Number(p.minutes)||0);
     return fixed>0 && !p.start ? {start:"",end:"",minutes:fixed} : {start:p.start||"",end:p.end||""};
@@ -6774,14 +6871,15 @@ function openEdit(key){
   clearEditValidation();
   $("smartPauseInput").value="";
   updateSmartPausePreview();
-  $("editDialog").showModal();
+  if(!$("editDialog").open) $("editDialog").showModal();
   updateEditPreview();
+  editDraftSig=editDraftSignature();
 }
 function toggleWorkFields(){
   const status=$("editStatus").value;
   $("workFields").style.display=status==="work"?"block":"none";
-  const note=$("editNote").closest("label");
-  if(note) note.style.display=status==="clear"?"none":"grid";
+  const note=$("editNoteWrap");
+  if(note) note.style.display=status==="clear"?"none":"block";
   let hint=$("clearEntryHint");
   if(status==="clear"){
     if(!hint){
@@ -6875,11 +6973,17 @@ $("editForm").addEventListener("submit",async e=>{
     return;
   }
 
+  if(!commitEditDraft()) return;
+  $("editDialog").close();
+  renderBackToEditOrigin("Tag gespeichert");
+});
+function commitEditDraft(){
+  const status=$("editStatus").value;
   if(status==="work"){
     const validation=validateWorkEditDraft();
     if(validation){
       showEditValidation(validation.message,validation.focusId);
-      return;
+      return false;
     }
   }
   clearEditValidation();
@@ -6897,7 +7001,7 @@ $("editForm").addEventListener("submit",async e=>{
     if(!start && !end && manualRaw){
       if(!manualParsed || manualParsed.error){
         toast("Arbeitszeit direkt nicht erkannt");
-        return;
+        return false;
       }
       rec.start="";
       rec.end="";
@@ -6922,9 +7026,35 @@ $("editForm").addEventListener("submit",async e=>{
     delete rec.manualSource;
   }
   save();
+  return true;
+}
+/* V38.3: Löschen per Mülleimer, Tage blättern */
+$("editDeleteBtn").addEventListener("click",async()=>{
+  if(!state.records[editDateKey]) return;
+  if(!(await confirmClearDay(editDateKey))) return;
+  delete state.records[editDateKey];
+  save();
   $("editDialog").close();
-  renderBackToEditOrigin("Tag gespeichert");
+  renderBackToEditOrigin("Eintrag zurückgesetzt – Kein Eintrag");
 });
+async function stepEditDay(n){
+  if(editDraftSignature()!==editDraftSig){
+    const ok=await askConfirm(`Änderungen am ${$("editDateLabel").textContent} speichern?`,{ok:"Speichern",cancel:"Verwerfen"});
+    if(ok){
+      if($("editStatus").value==="work"){
+        const v=validateWorkEditDraft();
+        if(v){showEditValidation(v.message,v.focusId);return;}
+      }
+      if(!commitEditDraft()) return;
+      render();
+      toast("Tag gespeichert");
+    }
+  }
+  const d=dateFromKey(editDateKey);
+  openEdit(localDateKey(new Date(d.getFullYear(),d.getMonth(),d.getDate()+n)));
+}
+$("editPrevDay").addEventListener("click",()=>stepEditDay(-1));
+$("editNextDay").addEventListener("click",()=>stepEditDay(1));
 
 $("plannerFridayEnd").addEventListener("input",()=>{plannerFridayPauseTouched=false;updateWeekPlannerPreview();});
 $("plannerFridayPause").addEventListener("input",()=>{plannerFridayPauseTouched=true;updateWeekPlannerPreview();});
